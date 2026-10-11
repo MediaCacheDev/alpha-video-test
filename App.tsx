@@ -396,6 +396,7 @@ function AppContent() {
                 source={{ uri: webmUri }}
                 autoPlay
                 loop
+                onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
               />
             );
             if (instance.type === 'webmcpp') return (

@@ -2982,7 +2982,7 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
-  AlphaVideoGpu: 483ce77f3f48b79a2e56e50c8aec650f39343eff
+  AlphaVideoGpu: 1ab75c7a3c6a6376b2ce8aabdf624e6384c672d1
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   fast_float: b32c788ed9c6a8c584d114d0047beda9664e7cc6
@@ -3031,7 +3031,7 @@ SPEC CHECKSUMS:
   react-native-apng-avif: 73214c2274079683f6c305965601545835aa6195
   react-native-safe-area-context: c00143b4823773bba23f2f19f85663ae89ceb460
   react-native-skia: b60d0b9d9aea330baef956b7f015d0af2b42076d
-  react-native-webm-alpha-player-js: e20c82ea26899580db62afbaa617c58edcc93e52
+  react-native-webm-alpha-player-js: d8ac061bfed3bf5045078f100cacaea88e6d638c
   React-NativeModulesApple: a2c3d2cbec893956a5b3e4060322db2984fff75b
   React-networking: 3f98bd96893a294376e7e03730947a08d474c380
   React-oscompat: 80166b66da22e7af7fad94474e9997bd52d4c8c6
