@@ -32,6 +32,30 @@ export const CheckerboardBackground: React.FC = () => {
     }
   }, []);
 
+  // On web, use CSS background pattern for better performance
+  if (Platform.OS === 'web') {
+    return (
+      <View 
+        style={[
+          styles.container, 
+          { 
+            // @ts-ignore - web-specific CSS
+            backgroundImage: `
+              linear-gradient(45deg, #c0c0c0 25%, transparent 25%),
+              linear-gradient(-45deg, #c0c0c0 25%, transparent 25%),
+              linear-gradient(45deg, transparent 75%, #c0c0c0 75%),
+              linear-gradient(-45deg, transparent 75%, #c0c0c0 75%)
+            `,
+            backgroundColor: '#e0e0e0',
+            backgroundSize: `${TILE_SIZE * 2}px ${TILE_SIZE * 2}px`,
+            backgroundPosition: `0 0, 0 ${TILE_SIZE}px, ${TILE_SIZE}px -${TILE_SIZE}px, -${TILE_SIZE}px 0px`,
+          }
+        ]} 
+      />
+    );
+  }
+
+  // Native: use View tiles
   const cols = Math.ceil(dimensions.width / TILE_SIZE);
   const rows = Math.ceil(dimensions.height / TILE_SIZE);
   

@@ -13,15 +13,18 @@
   },
   "dependencies": {
     "@react-native/new-app-screen": "0.83.1",
+    "@shopify/react-native-skia": "^2.4.14",
+    "alpha-video-gpu": "file:../ktx2player/alpha-video-gpu-1.0.0.tgz",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-native": "0.83.1",
     "react-native-apng-player": "file:../apng/react-native-apng-player-1.0.0.tgz",
-    "react-native-ktx2player": "file:../ktx2player/react-native-ktx2player-1.0.1.tgz",
+    "react-native-gesture-handler": "^2.30.0",
     "react-native-safe-area-context": "^5.5.2",
     "react-native-web": "^0.20.0",
     "react-native-webm-alpha-player": "file:../webmvp9alphaplayer/react-native-webm-alpha-player/react-native-webm-alpha-player-1.0.0.tgz",
-    "react-native-webm-alpha-player-js": "file:../webmvp9alphaplayer/react-native-webm-alpha-player-java-swift/react-native-webm-alpha-player-js-1.0.0.tgz"
+    "react-native-webm-alpha-player-js": "file:../webmvp9alphaplayer/react-native-webm-alpha-player-java-swift/react-native-webm-alpha-player-js-1.0.0.tgz",
+    "react-native-worklets": "^0.7.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

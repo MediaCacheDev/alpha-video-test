@@ -3,10 +3,12 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 interface SpawnControlsProps {
   onSpawnKTX2: () => void;
-  onSpawnKTX2Stream?: () => void;
   onSpawnKTX2Uncompressed?: () => void;
+  onSpawnAstv?: () => void;
+  onSpawnAstvFuzzy?: () => void;
   onSpawnWebM: () => void;
   onSpawnWebMCpp?: () => void;
+  onSpawnExoVp9Alpha?: () => void;
   onSpawnApng?: () => void;
   onSpawnAvif?: () => void;
   onClearAll: () => void;
@@ -14,10 +16,12 @@ interface SpawnControlsProps {
 
 export const SpawnControls: React.FC<SpawnControlsProps> = ({
   onSpawnKTX2,
-  onSpawnKTX2Stream,
   onSpawnKTX2Uncompressed,
+  onSpawnAstv,
+  onSpawnAstvFuzzy,
   onSpawnWebM,
   onSpawnWebMCpp,
+  onSpawnExoVp9Alpha,
   onSpawnApng,
   onSpawnAvif,
   onClearAll,
@@ -30,19 +34,8 @@ export const SpawnControls: React.FC<SpawnControlsProps> = ({
         activeOpacity={0.7}
       >
         <Text style={styles.buttonText}>+ ASTC</Text>
-        <Text style={styles.subText}>GPU Texture</Text>
+        <Text style={styles.subText}>KTX2 Zstd</Text>
       </TouchableOpacity>
-
-      {onSpawnKTX2Stream && (
-        <TouchableOpacity
-          style={[styles.button, styles.ktx2StreamButton]}
-          onPress={onSpawnKTX2Stream}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.buttonText}>+ Stream</Text>
-          <Text style={styles.subText}>KTX2 Zstd</Text>
-        </TouchableOpacity>
-      )}
 
       {onSpawnKTX2Uncompressed && (
         <TouchableOpacity
@@ -52,6 +45,28 @@ export const SpawnControls: React.FC<SpawnControlsProps> = ({
         >
           <Text style={styles.buttonText}>+ Raw</Text>
           <Text style={styles.subText}>Uncompressed</Text>
+        </TouchableOpacity>
+      )}
+
+      {onSpawnAstv && (
+        <TouchableOpacity
+          style={[styles.button, styles.astvButton]}
+          onPress={onSpawnAstv}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.buttonText}>+ ASTV</Text>
+          <Text style={styles.subText}>Interframe</Text>
+        </TouchableOpacity>
+      )}
+
+      {onSpawnAstvFuzzy && (
+        <TouchableOpacity
+          style={[styles.button, styles.astvFuzzyButton]}
+          onPress={onSpawnAstvFuzzy}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.buttonText}>+ ASTV</Text>
+          <Text style={styles.subText}>Fuzzy Skip</Text>
         </TouchableOpacity>
       )}
 
@@ -72,6 +87,17 @@ export const SpawnControls: React.FC<SpawnControlsProps> = ({
         >
           <Text style={styles.buttonText}>+ WebM</Text>
           <Text style={styles.subText}>C++ FFmpeg</Text>
+        </TouchableOpacity>
+      )}
+
+      {onSpawnExoVp9Alpha && (
+        <TouchableOpacity
+          style={[styles.button, styles.exoVp9AlphaButton]}
+          onPress={onSpawnExoVp9Alpha}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.buttonText}>+ ExoPlayer</Text>
+          <Text style={styles.subText}>VP9 Alpha</Text>
         </TouchableOpacity>
       )}
 
@@ -129,9 +155,6 @@ const styles = StyleSheet.create({
   ktx2Button: {
     backgroundColor: '#4CAF50',
   },
-  ktx2StreamButton: {
-    backgroundColor: '#8BC34A',
-  },
   ktx2UncompressedButton: {
     backgroundColor: '#CDDC39',
   },
@@ -141,8 +164,23 @@ const styles = StyleSheet.create({
   webmCppButton: {
     backgroundColor: '#00BCD4',
   },
+  exoVp9AlphaButton: {
+    backgroundColor: '#FF9800',
+    borderWidth: 1,
+    borderColor: '#FFB74D',
+  },
   apngButton: {
     backgroundColor: '#9C27B0',
+  },
+  astvButton: {
+    backgroundColor: '#E91E63',
+    borderWidth: 1,
+    borderColor: '#F48FB1',
+  },
+  astvFuzzyButton: {
+    backgroundColor: '#AD1457',
+    borderWidth: 1,
+    borderColor: '#E91E63',
   },
   avifButton: {
     backgroundColor: '#FF5722',

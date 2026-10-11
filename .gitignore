@@ -67,3 +67,14 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Demo media and prebuilt binaries (not committed; see the release plan)
+src/assets/
+assets/media/
+android/app/libs/*.aar
+android/app/src/main/jniLibs/
+android/app/src/main/prebuilt/
+
+# Test and TypeScript output
+test-results/
+*.tsbuildinfo

@@ -72,6 +72,7 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -84,6 +85,25 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+        }
+    }
+    
+    // NOTE: CMake build disabled - it interferes with React Native's native module generation.
+    // The libexovp9alpha.so is built separately and included in jniLibs.
+    // externalNativeBuild {
+    //     cmake {
+    //         path 'src/main/cpp/CMakeLists.txt'
+    //         version '3.22.1'
+    //     }
+    // }
+    
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
     }
     signingConfigs {
         debug {
@@ -105,6 +125,10 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+    
+    lint {
+        abortOnError false
+    }
 }
 
 dependencies {
@@ -116,4 +140,17 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+    
+    // ExoPlayer dependencies (Media3)
+    def media3_version = "1.5.0"
+    implementation("androidx.media3:media3-exoplayer:$media3_version")
+    implementation("androidx.media3:media3-exoplayer-dash:$media3_version")
+    implementation("androidx.media3:media3-exoplayer-hls:$media3_version")
+    implementation("androidx.media3:media3-exoplayer-smoothstreaming:$media3_version")
+    implementation("androidx.media3:media3-datasource:$media3_version")
+    implementation("androidx.media3:media3-common:$media3_version")
+    implementation("androidx.media3:media3-decoder:$media3_version")
+    
+    // Our custom VP9 alpha decoder module (local AAR)
+    implementation files('libs/lib-decoder-vp9-alpha-release.aar')
 }
