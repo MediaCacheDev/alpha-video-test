@@ -18,7 +18,7 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-native": "0.83.1",
-    "react-native-apng-player": "file:../apng/react-native-apng-player-1.0.0.tgz",
+    "react-native-apng-avif": "file:../react-native-apng-avif/react-native-apng-avif-1.0.0.tgz",
     "react-native-gesture-handler": "^2.30.0",
     "react-native-safe-area-context": "^5.5.2",
     "react-native-web": "^0.20.0",

@@ -4,8 +4,6 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 interface SpawnControlsProps {
   onSpawnKTX2: () => void;
   onSpawnKTX2Uncompressed?: () => void;
-  onSpawnAstv?: () => void;
-  onSpawnAstvFuzzy?: () => void;
   onSpawnWebM: () => void;
   onSpawnWebMCpp?: () => void;
   onSpawnExoVp9Alpha?: () => void;
@@ -17,8 +15,6 @@ interface SpawnControlsProps {
 export const SpawnControls: React.FC<SpawnControlsProps> = ({
   onSpawnKTX2,
   onSpawnKTX2Uncompressed,
-  onSpawnAstv,
-  onSpawnAstvFuzzy,
   onSpawnWebM,
   onSpawnWebMCpp,
   onSpawnExoVp9Alpha,
@@ -45,28 +41,6 @@ export const SpawnControls: React.FC<SpawnControlsProps> = ({
         >
           <Text style={styles.buttonText}>+ Raw</Text>
           <Text style={styles.subText}>Uncompressed</Text>
-        </TouchableOpacity>
-      )}
-
-      {onSpawnAstv && (
-        <TouchableOpacity
-          style={[styles.button, styles.astvButton]}
-          onPress={onSpawnAstv}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.buttonText}>+ ASTV</Text>
-          <Text style={styles.subText}>Interframe</Text>
-        </TouchableOpacity>
-      )}
-
-      {onSpawnAstvFuzzy && (
-        <TouchableOpacity
-          style={[styles.button, styles.astvFuzzyButton]}
-          onPress={onSpawnAstvFuzzy}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.buttonText}>+ ASTV</Text>
-          <Text style={styles.subText}>Fuzzy Skip</Text>
         </TouchableOpacity>
       )}
 
@@ -171,16 +145,6 @@ const styles = StyleSheet.create({
   },
   apngButton: {
     backgroundColor: '#9C27B0',
-  },
-  astvButton: {
-    backgroundColor: '#E91E63',
-    borderWidth: 1,
-    borderColor: '#F48FB1',
-  },
-  astvFuzzyButton: {
-    backgroundColor: '#AD1457',
-    borderWidth: 1,
-    borderColor: '#E91E63',
   },
   avifButton: {
     backgroundColor: '#FF5722',

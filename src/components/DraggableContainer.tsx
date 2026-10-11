@@ -11,7 +11,7 @@ import {
 
 interface DraggableContainerProps {
   id: string;
-  type: 'ktx2' | 'ktx2uncompressed' | 'astv' | 'webm' | 'webmcpp' | 'exovp9alpha' | 'apng' | 'avif';
+  type: 'ktx2' | 'ktx2uncompressed' | 'webm' | 'webmcpp' | 'exovp9alpha' | 'apng' | 'avif';
   initialX: number;
   initialY: number;
   zIndex: number;

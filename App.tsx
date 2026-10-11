@@ -32,16 +32,14 @@ import { usePerformanceMetrics } from './src/hooks/usePerformanceMetrics';
 import { AlphaVideoGpuView } from 'alpha-video-gpu';
 import { WebMAlphaView } from 'react-native-webm-alpha-player-js';
 import { WebMAlphaView as WebMAlphaViewCpp } from 'react-native-webm-alpha-player';
-import { ApngView } from 'react-native-apng-player';
+import { AnimatedImageView } from 'react-native-apng-avif';
 
 // Asset definitions per animation
-type AssetType = 'glow181' | 'batur1080p' | 'manta1080p' | 'glowDual' | 'mantaDual' | 'glowDualAv1' | 'mantaDualAv1';
+type AssetType = 'glow181' | 'manta1080p' | 'glowDual' | 'mantaDual' | 'glowDualAv1' | 'mantaDualAv1';
 
 interface AssetFiles {
   ktx2Stream?: any;
   ktx2Uncompressed?: any;
-  astv?: any;
-  astvFuzzy?: any;
   webm?: any;
   apng?: any;
   avif?: any;
@@ -51,14 +49,9 @@ const ASSETS: Record<AssetType, AssetFiles> = {
   glow181: {
     ktx2Stream: require('./src/assets/test_stream.ktx2'),
     ktx2Uncompressed: require('./src/assets/test_uncompressed.ktx2'),
-    astv: require('./src/assets/test_astv.astv'),
-    astvFuzzy: require('./src/assets/test_astv_fuzzy.astv'),
     webm: require('./src/assets/test_webm.webm'),
     apng: require('./src/assets/test_apng.apng'),
     avif: require('./src/assets/test_avif.avif'),
-  },
-  batur1080p: {
-    astv: require('./src/assets/test_astv_batur.astv'),
   },
   manta1080p: {
     webm: require('./src/assets/manta_1080p_yuva.webm'),
@@ -82,7 +75,6 @@ const ASSETS: Record<AssetType, AssetFiles> = {
 
 const ASSET_LABELS: Record<AssetType, string> = {
   glow181: 'Glow 181 (400x400)',
-  batur1080p: 'Batur ASTV (1080p)',
   manta1080p: 'Manta YUVA (1080p)',
   glowDual: 'Glow Dual VP9 (HW)',
   mantaDual: 'Manta Dual VP9 (HW)',
@@ -108,7 +100,7 @@ const DEFAULT_PLAYER_SIZE = 150;
 
 interface AnimationInstance {
   id: string;
-  type: 'ktx2' | 'ktx2uncompressed' | 'astv' | 'astvFuzzy' | 'webm' | 'webmcpp' | 'exovp9alpha' | 'apng' | 'avif';
+  type: 'ktx2' | 'ktx2uncompressed' | 'webm' | 'webmcpp' | 'exovp9alpha' | 'apng' | 'avif';
   x: number;
   y: number;
   zIndex: number;
@@ -175,8 +167,6 @@ function AppContent() {
   const fallbackAsset = ASSETS.glow181;
   const ktx2StreamUri = resolveAssetUri(currentAsset.ktx2Stream || fallbackAsset.ktx2Stream);
   const ktx2UncompressedUri = resolveAssetUri(currentAsset.ktx2Uncompressed || fallbackAsset.ktx2Uncompressed);
-  const astvUri = resolveAssetUri(currentAsset.astv || fallbackAsset.astv);
-  const astvFuzzyUri = resolveAssetUri(currentAsset.astvFuzzy || fallbackAsset.astvFuzzy);
   const webmUri = resolveAssetUri(currentAsset.webm || fallbackAsset.webm);
   const apngUri = resolveAssetUri(currentAsset.apng || fallbackAsset.apng);
   const avifUri = resolveAssetUri(currentAsset.avif || fallbackAsset.avif);
@@ -207,30 +197,6 @@ function AppContent() {
     const newInstance: AnimationInstance = {
       id: `ktx2uncompressed-${++instanceCounter}`,
       type: 'ktx2uncompressed',
-      x: pos.x,
-      y: pos.y,
-      zIndex: instances.length,
-    };
-    setInstances(prev => [...prev, newInstance]);
-  }, [instances.length, getRandomPosition]);
-
-  const spawnAstv = useCallback(() => {
-    const pos = getRandomPosition();
-    const newInstance: AnimationInstance = {
-      id: `astv-${++instanceCounter}`,
-      type: 'astv',
-      x: pos.x,
-      y: pos.y,
-      zIndex: instances.length,
-    };
-    setInstances(prev => [...prev, newInstance]);
-  }, [instances.length, getRandomPosition]);
-
-  const spawnAstvFuzzy = useCallback(() => {
-    const pos = getRandomPosition();
-    const newInstance: AnimationInstance = {
-      id: `astvfuzzy-${++instanceCounter}`,
-      type: 'astvFuzzy',
       x: pos.x,
       y: pos.y,
       zIndex: instances.length,
@@ -424,24 +390,6 @@ function AppContent() {
                 onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
               />
             );
-            if (instance.type === 'astv') return (
-              <AlphaVideoGpuView
-                style={sizeStyle}
-                source={{ uri: astvUri || '' }}
-                autoPlay
-                loop
-                onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
-              />
-            );
-            if (instance.type === 'astvFuzzy') return (
-              <AlphaVideoGpuView
-                style={sizeStyle}
-                source={{ uri: astvFuzzyUri || '' }}
-                autoPlay
-                loop
-                onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
-              />
-            );
             if (instance.type === 'webm') return (
               <WebMAlphaView
                 style={sizeStyle}
@@ -473,17 +421,17 @@ function AppContent() {
               />
             );
             if (instance.type === 'apng') return (
-              <ApngView
+              <AnimatedImageView
                 style={sizeStyle}
-                source={{ uri: apngUri }}
+                source={{ uri: apngUri || '' }}
                 autoPlay
                 loop
               />
             );
             if (instance.type === 'avif') return (
-              <ApngView
+              <AnimatedImageView
                 style={sizeStyle}
-                source={{ uri: avifUri }}
+                source={{ uri: avifUri || '' }}
                 autoPlay
                 loop
               />
@@ -657,8 +605,6 @@ function AppContent() {
         <SpawnControls
           onSpawnKTX2={spawnKTX2}
           onSpawnKTX2Uncompressed={spawnKTX2Uncompressed}
-          onSpawnAstv={spawnAstv}
-          onSpawnAstvFuzzy={spawnAstvFuzzy}
           onSpawnWebM={spawnWebM}
           onSpawnWebMCpp={spawnWebMCpp}
           onSpawnExoVp9Alpha={Platform.OS === 'android' ? spawnExoVp9Alpha : undefined}

@@ -20,7 +20,7 @@ target 'AlphaVideoTest' do
   # Enable modular headers for SDWebImage dependencies (required for Swift pods)
   pod 'SDWebImage', :modular_headers => true
   pod 'SDWebImageAVIFCoder', :modular_headers => true
-  pod 'libavif', :modular_headers => true
+  pod 'libavif/libdav1d', :modular_headers => true
 
   use_react_native!(
     :path => config[:reactNativePath],
