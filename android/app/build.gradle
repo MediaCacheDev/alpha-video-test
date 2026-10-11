@@ -105,6 +105,11 @@ android {
             jniLibs.srcDirs = ['src/main/jniLibs']
         }
     }
+
+    // alpha-video-gpu memory-maps streamed files in place, which only works for stored entries
+    androidResources {
+        noCompress += ['ktx2', 'zst', 'glb']
+    }
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
