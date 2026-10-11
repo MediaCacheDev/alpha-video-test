@@ -3066,7 +3066,7 @@ SPEC CHECKSUMS:
   ReactCodegen: 3d48510bcef445f6403c0004047d4d9cbb915435
   ReactCommon: ac934cb340aee91282ecd6f273a26d24d4c55cae
   RNGestureHandler: cd4be101cfa17ea6bbd438710caa02e286a84381
-  RNWebMAlphaPlayer: 63f1115e0bb65ed5eb5e2ca1c6abcdfa86fb47e0
+  RNWebMAlphaPlayer: 7b28af91599619e3f18da19be6a1b92d42cab8e7
   RNWorklets: 69f7239afaf3a156f7f9549eeb0ae8d02adc095f
   SDWebImage: e9c98383c7572d713c1a0d7dd2783b10599b9838
   SDWebImageAVIFCoder: afe194a084e851f70228e4be35ef651df0fc5c57
