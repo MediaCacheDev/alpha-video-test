@@ -16,6 +16,7 @@
     "@react-native/new-app-screen": "0.83.1",
     "@shopify/react-native-skia": "^2.4.14",
     "alpha-video-gpu": "file:../ktx2player/alpha-video-gpu-1.0.0.tgz",
+    "alpha-video-gpu-web": "file:../ktx2player/web/alpha-video-gpu-web-1.0.0.tgz",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-native": "0.83.1",

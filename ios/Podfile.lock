@@ -1,6 +1,4 @@
 PODS:
-  - AlphaVideoGpu (1.0.0):
-    - React-Core
   - boost (1.84.0)
   - DoubleConversion (1.1.6)
   - fast_float (8.0.0)
@@ -1905,6 +1903,8 @@ PODS:
   - react-native-alpha-video-ffmpegkit (1.0.0):
     - ffmpegkit-vp9 (= 6.0.0)
     - React-Core
+  - react-native-alpha-video-gpu (1.0.0):
+    - React-Core
   - react-native-apng-avif (1.0.0):
     - libavif/libdav1d
     - React-Core
@@ -2711,7 +2711,6 @@ PODS:
   - Yoga (0.0.0)
 
 DEPENDENCIES:
-  - AlphaVideoGpu (from `../node_modules/alpha-video-gpu`)
   - boost (from `../node_modules/react-native/third-party-podspecs/boost.podspec`)
   - DoubleConversion (from `../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec`)
   - fast_float (from `../node_modules/react-native/third-party-podspecs/fast_float.podspec`)
@@ -2759,6 +2758,7 @@ DEPENDENCIES:
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-alpha-video (from `../node_modules/react-native-alpha-video`)
   - react-native-alpha-video-ffmpegkit (from `../node_modules/react-native-alpha-video-ffmpegkit`)
+  - react-native-alpha-video-gpu (from `../node_modules/alpha-video-gpu`)
   - react-native-apng-avif (from `../node_modules/react-native-apng-avif`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-skia (from `../node_modules/@shopify/react-native-skia`)"
@@ -2812,8 +2812,6 @@ SPEC REPOS:
     - SocketRocket
 
 EXTERNAL SOURCES:
-  AlphaVideoGpu:
-    :path: "../node_modules/alpha-video-gpu"
   boost:
     :podspec: "../node_modules/react-native/third-party-podspecs/boost.podspec"
   DoubleConversion:
@@ -2905,6 +2903,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-alpha-video"
   react-native-alpha-video-ffmpegkit:
     :path: "../node_modules/react-native-alpha-video-ffmpegkit"
+  react-native-alpha-video-gpu:
+    :path: "../node_modules/alpha-video-gpu"
   react-native-apng-avif:
     :path: "../node_modules/react-native-apng-avif"
   react-native-safe-area-context:
@@ -2985,7 +2985,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
-  AlphaVideoGpu: 1ab75c7a3c6a6376b2ce8aabdf624e6384c672d1
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   fast_float: b32c788ed9c6a8c584d114d0047beda9664e7cc6
@@ -3034,6 +3033,7 @@ SPEC CHECKSUMS:
   React-microtasksnativemodule: cdc02da075f2857803ed63f24f5f72fc40e094c0
   react-native-alpha-video: ba3be7917f15146e3f1366d0a7bbc247c0c7e746
   react-native-alpha-video-ffmpegkit: a15cd7e66742996bbbe1f43c88c27324d2437d0c
+  react-native-alpha-video-gpu: d7242ee56740ad7e761f5b0fd8438a6e6eb0815f
   react-native-apng-avif: 73214c2274079683f6c305965601545835aa6195
   react-native-safe-area-context: c00143b4823773bba23f2f19f85663ae89ceb460
   react-native-skia: b60d0b9d9aea330baef956b7f015d0af2b42076d
