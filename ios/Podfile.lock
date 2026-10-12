@@ -1902,6 +1902,9 @@ PODS:
     - SocketRocket
   - react-native-alpha-video (1.0.0):
     - React-Core
+  - react-native-alpha-video-ffmpegkit (1.0.0):
+    - ffmpegkit-vp9 (= 6.0.0)
+    - React-Core
   - react-native-apng-avif (1.0.0):
     - libavif/libdav1d
     - React-Core
@@ -2024,9 +2027,6 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-webm-alpha-player-js (1.0.0):
-    - ffmpegkit-vp9 (= 6.0.0)
-    - React-Core
   - React-NativeModulesApple (0.83.1):
     - boost
     - DoubleConversion
@@ -2758,10 +2758,10 @@ DEPENDENCIES:
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-alpha-video (from `../node_modules/react-native-alpha-video`)
+  - react-native-alpha-video-ffmpegkit (from `../node_modules/react-native-alpha-video-ffmpegkit`)
   - react-native-apng-avif (from `../node_modules/react-native-apng-avif`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-skia (from `../node_modules/@shopify/react-native-skia`)"
-  - react-native-webm-alpha-player-js (from `../node_modules/react-native-webm-alpha-player-js`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-networking (from `../node_modules/react-native/ReactCommon/react/networking`)
   - React-oscompat (from `../node_modules/react-native/ReactCommon/oscompat`)
@@ -2903,14 +2903,14 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
   react-native-alpha-video:
     :path: "../node_modules/react-native-alpha-video"
+  react-native-alpha-video-ffmpegkit:
+    :path: "../node_modules/react-native-alpha-video-ffmpegkit"
   react-native-apng-avif:
     :path: "../node_modules/react-native-apng-avif"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
   react-native-skia:
     :path: "../node_modules/@shopify/react-native-skia"
-  react-native-webm-alpha-player-js:
-    :path: "../node_modules/react-native-webm-alpha-player-js"
   React-NativeModulesApple:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios"
   React-networking:
@@ -3033,10 +3033,10 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 7b72a669e94662359dad4f42b5af005eb24b4e83
   React-microtasksnativemodule: cdc02da075f2857803ed63f24f5f72fc40e094c0
   react-native-alpha-video: ba3be7917f15146e3f1366d0a7bbc247c0c7e746
+  react-native-alpha-video-ffmpegkit: a15cd7e66742996bbbe1f43c88c27324d2437d0c
   react-native-apng-avif: 73214c2274079683f6c305965601545835aa6195
   react-native-safe-area-context: c00143b4823773bba23f2f19f85663ae89ceb460
   react-native-skia: b60d0b9d9aea330baef956b7f015d0af2b42076d
-  react-native-webm-alpha-player-js: 7415ebf457fac646e5b2e7f0a91048fa10348093
   React-NativeModulesApple: a2c3d2cbec893956a5b3e4060322db2984fff75b
   React-networking: 3f98bd96893a294376e7e03730947a08d474c380
   React-oscompat: 80166b66da22e7af7fad94474e9997bd52d4c8c6

@@ -29,7 +29,7 @@ import { usePerformanceMetrics } from './src/hooks/usePerformanceMetrics';
 // Import players - all have web support
 // import { KTX2PlayerView } from 'react-native-ktx2player';
 import { AlphaVideoGpuView } from 'alpha-video-gpu';
-import { WebMAlphaView } from 'react-native-webm-alpha-player-js';
+import { FFmpegKitAlphaView } from 'react-native-alpha-video-ffmpegkit';
 import { AlphaVideoView } from 'react-native-alpha-video';
 import { AnimatedImageView } from 'react-native-apng-avif';
 
@@ -385,7 +385,7 @@ function AppContent() {
               />
             );
             if (instance.type === 'webm') return (
-              <WebMAlphaView
+              <FFmpegKitAlphaView
                 style={sizeStyle}
                 source={{ uri: webmUri }}
                 mode={webmKitStream ? 'stream' : 'preload'}

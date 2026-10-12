@@ -15,7 +15,7 @@ const babelLoaderConfiguration = {
     path.resolve(appDirectory, 'node_modules/react-native-web'),
     // Include react-native packages that need transpiling
     path.resolve(appDirectory, 'node_modules/alpha-video-gpu'),
-    path.resolve(appDirectory, 'node_modules/react-native-webm-alpha-player-js'),
+    path.resolve(appDirectory, 'node_modules/react-native-alpha-video-ffmpegkit'),
     path.resolve(appDirectory, 'node_modules/react-native-alpha-video'),
     path.resolve(appDirectory, 'node_modules/react-native-apng-avif'),
     path.resolve(appDirectory, 'node_modules/react-native-safe-area-context'),

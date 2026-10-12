@@ -20,11 +20,11 @@
     "react-dom": "19.2.0",
     "react-native": "0.83.1",
     "react-native-alpha-video": "file:../webmvp9alphaplayer/react-native-webm-alpha-player/react-native-alpha-video-1.0.0.tgz",
+    "react-native-alpha-video-ffmpegkit": "file:../webmvp9alphaplayer/react-native-webm-alpha-player-java-swift/react-native-alpha-video-ffmpegkit-1.0.0.tgz",
     "react-native-apng-avif": "file:../react-native-apng-avif/react-native-apng-avif-1.0.0.tgz",
     "react-native-gesture-handler": "^2.30.0",
     "react-native-safe-area-context": "^5.5.2",
     "react-native-web": "^0.20.0",
-    "react-native-webm-alpha-player-js": "file:../webmvp9alphaplayer/react-native-webm-alpha-player-java-swift/react-native-webm-alpha-player-js-1.0.0.tgz",
     "react-native-worklets": "^0.7.1"
   },
   "devDependencies": {
