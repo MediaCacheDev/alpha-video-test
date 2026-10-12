@@ -40,15 +40,9 @@ export const CheckerboardBackground: React.FC = () => {
           styles.container, 
           { 
             // @ts-ignore - web-specific CSS
-            backgroundImage: `
-              linear-gradient(45deg, #c0c0c0 25%, transparent 25%),
-              linear-gradient(-45deg, #c0c0c0 25%, transparent 25%),
-              linear-gradient(45deg, transparent 75%, #c0c0c0 75%),
-              linear-gradient(-45deg, transparent 75%, #c0c0c0 75%)
-            `,
-            backgroundColor: '#e0e0e0',
+            // Same layout as the native tiles: light square at the top left
+            backgroundImage: 'repeating-conic-gradient(#c0c0c0 0% 25%, #e0e0e0 0% 50%)',
             backgroundSize: `${TILE_SIZE * 2}px ${TILE_SIZE * 2}px`,
-            backgroundPosition: `0 0, 0 ${TILE_SIZE}px, ${TILE_SIZE}px -${TILE_SIZE}px, -${TILE_SIZE}px 0px`,
           }
         ]} 
       />

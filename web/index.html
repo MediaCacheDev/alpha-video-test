@@ -14,6 +14,12 @@
       background-color: #1a1a2e;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
+
+    /* react-native-web's app container is flex: 1, which needs a flex parent to get a height */
+    #root {
+      display: flex;
+      flex-direction: column;
+    }
     
     /* Prevent text selection on drag */
     * {
