@@ -131,9 +131,6 @@ function AppContent() {
   // Render at real video resolution vs scaled thumbnail
   const [useRealSize, setUseRealSize] = useState(false);
   
-  // GPU playback for KTX2/ASTC
-  const [gpuPlayback, setGpuPlayback] = useState(false);
-  
   // Stream mode for KTX2/ASTC
   const [ktx2StreamEnabled, setKtx2StreamEnabled] = useState(true);
   
@@ -362,7 +359,6 @@ function AppContent() {
                 memoryStrategy={ktx2MemoryStrategy}
                 autoPlay
                 loop
-                gpuPlayback={gpuPlayback}
                 stream={ktx2StreamEnabled}
                 streamingRingSize={ktx2RingSize}
                 streamingCacheSize={ktx2CacheSize}
@@ -377,7 +373,6 @@ function AppContent() {
                 memoryStrategy={ktx2MemoryStrategy}
                 autoPlay
                 loop
-                gpuPlayback={gpuPlayback}
                 streamingRingSize={ktx2RingSize}
                 streamingCacheSize={ktx2CacheSize}
                 streamingPrefetchAhead={ktx2PrefetchAhead}
@@ -520,19 +515,10 @@ function AppContent() {
             thumbColor={ktx2StreamEnabled ? '#fff' : '#888'}
           />
         </View>
-        <View style={styles.streamingRow}>
-          <Text style={styles.streamingLabel}>GPU Playback</Text>
-          <Switch
-            value={gpuPlayback}
-            onValueChange={setGpuPlayback}
-            trackColor={{ false: '#555', true: '#4a9' }}
-            thumbColor={gpuPlayback ? '#fff' : '#888'}
-          />
-        </View>
       </View>}
 
       {/* KTX2 ZST Streaming Settings Panel */}
-      {showSettings && <View style={[styles.streamingPanel, { top: insets.top + 320 }]}>
+      {showSettings && <View style={[styles.streamingPanel, { top: insets.top + 290 }]}>
         <Text style={styles.streamingTitle}>KTX2 ZST</Text>
         <View style={styles.streamingRow}>
           <Text style={styles.streamingLabel}>{ktx2MemoryStrategy.toUpperCase()}</Text>
@@ -597,7 +583,7 @@ function AppContent() {
       </View>}
 
       {/* WebM FFmpegKit Settings Panel */}
-      {showSettings && <View style={[styles.streamingPanel, { top: insets.top + 470 }]}>
+      {showSettings && <View style={[styles.streamingPanel, { top: insets.top + 440 }]}>
         <Text style={styles.streamingTitle}>WebM FFmpegKit</Text>
         <View style={styles.streamingRow}>
           <Text style={styles.streamingLabel}>Stream</Text>
