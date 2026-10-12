@@ -373,6 +373,7 @@ function AppContent() {
                 memoryStrategy={ktx2MemoryStrategy}
                 autoPlay
                 loop
+                stream
                 streamingRingSize={ktx2RingSize}
                 streamingCacheSize={ktx2CacheSize}
                 streamingPrefetchAhead={ktx2PrefetchAhead}
