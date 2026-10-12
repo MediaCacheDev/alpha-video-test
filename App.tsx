@@ -4,7 +4,6 @@ import {
   StyleSheet,
   View,
   Dimensions,
-  Image,
   Text,
   TouchableOpacity,
   Switch,
@@ -38,38 +37,44 @@ import { AnimatedImageView } from 'react-native-apng-avif';
 type AssetType = 'glow181' | 'manta1080p' | 'glowDual' | 'mantaDual' | 'glowDualAv1' | 'mantaDualAv1';
 
 interface AssetFiles {
-  ktx2Stream?: any;
-  ktx2Uncompressed?: any;
-  webm?: any;
-  apng?: any;
-  avif?: any;
+  ktx2Stream?: string;
+  ktx2Uncompressed?: string;
+  webm?: string;
+  apng?: string;
+  avif?: string;
 }
 
+// assets/media/, bundled into the APK, the iOS app and the web build (see scripts/fetch-media.mjs)
+const media = (file: string) => `asset://media/${file}`;
+
+// Every format exists for Glow 181, so the other assets fall back to it.
+const GLOW_181: Required<AssetFiles> = {
+  ktx2Stream: media('test_stream.ktx2'),
+  ktx2Uncompressed: media('test_uncompressed.ktx2'),
+  webm: media('test_webm.webm'),
+  apng: media('test_apng.apng'),
+  avif: media('test_avif.avif'),
+};
+
 const ASSETS: Record<AssetType, AssetFiles> = {
-  glow181: {
-    ktx2Stream: require('./src/assets/test_stream.ktx2'),
-    ktx2Uncompressed: require('./src/assets/test_uncompressed.ktx2'),
-    webm: require('./src/assets/test_webm.webm'),
-    apng: require('./src/assets/test_apng.apng'),
-    avif: require('./src/assets/test_avif.avif'),
-  },
+  glow181: GLOW_181,
   manta1080p: {
-    webm: require('./src/assets/manta_1080p_yuva.webm'),
+    webm: media('manta_1080p_yuva.webm'),
   },
   // Dual-stream WebM files (alpha in separate VP9 stream - uses MediaCodec HW decoding)
   glowDual: {
-    webm: require('./src/assets/test_webm_dual.webm'),
+    webm: media('test_webm_dual.webm'),
     // Only WebM available for dual-stream
   },
   mantaDual: {
-    webm: require('./src/assets/manta_dual.webm'),
+    webm: media('manta_dual.webm'),
   },
   // Dual-stream AV1 files (alpha in separate AV1 stream - uses MediaCodec HW decoding)
   glowDualAv1: {
-    webm: require('./src/assets/test_webm_dual_av1.webm'),
+    webm: media('test_webm_dual_av1.webm'),
   },
   mantaDualAv1: {
-    webm: require('./src/assets/manta_dual_av1.webm'),
+    webm: media('manta_dual_av1.webm'),
   },
 };
 
@@ -81,19 +86,6 @@ const ASSET_LABELS: Record<AssetType, string> = {
   glowDualAv1: 'Glow Dual AV1 (HW)',
   mantaDualAv1: 'Manta Dual AV1 (HW)',
 };
-
-// Cross-platform asset resolver (Image.resolveAssetSource doesn't exist on web)
-function resolveAssetUri(asset: any): string | undefined {
-  if (Platform.OS === 'web') {
-    // On web with webpack, require() returns the URL string directly
-    if (typeof asset === 'string') return asset;
-    if (asset?.default) return asset.default;
-    if (asset?.uri) return asset.uri;
-    return undefined;
-  }
-  // Native platforms
-  return Image.resolveAssetSource(asset)?.uri;
-}
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const DEFAULT_PLAYER_SIZE = 150;
@@ -164,12 +156,11 @@ function AppContent() {
 
   // Resolve asset URIs - fall back to glow181 if format not available for selected asset
   const currentAsset = ASSETS[selectedAsset];
-  const fallbackAsset = ASSETS.glow181;
-  const ktx2StreamUri = resolveAssetUri(currentAsset.ktx2Stream || fallbackAsset.ktx2Stream);
-  const ktx2UncompressedUri = resolveAssetUri(currentAsset.ktx2Uncompressed || fallbackAsset.ktx2Uncompressed);
-  const webmUri = resolveAssetUri(currentAsset.webm || fallbackAsset.webm);
-  const apngUri = resolveAssetUri(currentAsset.apng || fallbackAsset.apng);
-  const avifUri = resolveAssetUri(currentAsset.avif || fallbackAsset.avif);
+  const ktx2StreamUri = currentAsset.ktx2Stream || GLOW_181.ktx2Stream;
+  const ktx2UncompressedUri = currentAsset.ktx2Uncompressed || GLOW_181.ktx2Uncompressed;
+  const webmUri = currentAsset.webm || GLOW_181.webm;
+  const apngUri = currentAsset.apng || GLOW_181.apng;
+  const avifUri = currentAsset.avif || GLOW_181.avif;
 
   const getRandomPosition = useCallback(() => {
     const maxX = SCREEN_WIDTH - DEFAULT_PLAYER_SIZE - 40;
@@ -424,7 +415,7 @@ function AppContent() {
             if (instance.type === 'apng') return (
               <AnimatedImageView
                 style={sizeStyle}
-                source={{ uri: apngUri || '' }}
+                source={{ uri: apngUri }}
                 autoPlay
                 loop
               />
@@ -432,7 +423,7 @@ function AppContent() {
             if (instance.type === 'avif') return (
               <AnimatedImageView
                 style={sizeStyle}
-                source={{ uri: avifUri || '' }}
+                source={{ uri: avifUri }}
                 autoPlay
                 loop
               />

@@ -103,12 +103,14 @@ android {
     sourceSets {
         main {
             jniLibs.srcDirs = ['src/main/jniLibs']
+            // The demo media, read in place as asset://media/...
+            assets.srcDirs += ['../../assets']
         }
     }
 
     // alpha-video-gpu memory-maps streamed files in place, which only works for stored entries
     androidResources {
-        noCompress += ['ktx2', 'zst', 'glb']
+        noCompress += ['ktx2', 'zst', 'glb', 'apng', 'avif']
     }
     signingConfigs {
         debug {

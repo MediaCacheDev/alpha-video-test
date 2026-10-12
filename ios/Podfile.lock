@@ -5,6 +5,7 @@ PODS:
   - DoubleConversion (1.1.6)
   - fast_float (8.0.0)
   - FBLazyVector (0.83.1)
+  - ffmpegkit-vp9 (6.0.0)
   - fmt (11.0.2)
   - glog (0.3.5)
   - hermes-engine (0.14.0):
@@ -2022,6 +2023,7 @@ PODS:
     - SocketRocket
     - Yoga
   - react-native-webm-alpha-player-js (1.0.0):
+    - ffmpegkit-vp9 (= 6.0.0)
     - React-Core
   - React-NativeModulesApple (0.83.1):
     - boost
@@ -2802,6 +2804,7 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - ffmpegkit-vp9
     - libavif
     - libdav1d
     - SDWebImage
@@ -2987,6 +2990,7 @@ SPEC CHECKSUMS:
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   fast_float: b32c788ed9c6a8c584d114d0047beda9664e7cc6
   FBLazyVector: 309703e71d3f2f1ed7dc7889d58309c9d77a95a4
+  ffmpegkit-vp9: 1c1567e9604259f715a5943fee50c371170bdd6a
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
   hermes-engine: 13c6d2aa55fcfd8edd36842d943d23facd7cd7fe
@@ -3031,7 +3035,7 @@ SPEC CHECKSUMS:
   react-native-apng-avif: 73214c2274079683f6c305965601545835aa6195
   react-native-safe-area-context: c00143b4823773bba23f2f19f85663ae89ceb460
   react-native-skia: b60d0b9d9aea330baef956b7f015d0af2b42076d
-  react-native-webm-alpha-player-js: d8ac061bfed3bf5045078f100cacaea88e6d638c
+  react-native-webm-alpha-player-js: 580ca86e16578f0a125d39a5d00ba54a2f3cc5df
   React-NativeModulesApple: a2c3d2cbec893956a5b3e4060322db2984fff75b
   React-networking: 3f98bd96893a294376e7e03730947a08d474c380
   React-oscompat: 80166b66da22e7af7fad94474e9997bd52d4c8c6

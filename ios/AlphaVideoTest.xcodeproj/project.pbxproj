@@ -10,6 +10,7 @@
 		0C80B921A6F3F58F76C31292 /* libPods-AlphaVideoTest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-AlphaVideoTest.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		1DF79F42FC0941C60B9F0527 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
+		4E99E31E1B1E082AB29E7268 /* media in Resources */ = {isa = PBXBuildFile; fileRef = EB6CBAFA2AE63C6BE0ADA9A2 /* media */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		PERFMETRICS001 /* PerformanceMetrics.m in Sources */ = {isa = PBXBuildFile; fileRef = PERFMETRICS002 /* PerformanceMetrics.m */; };
@@ -25,6 +26,7 @@
 		5DCACB8F33CDC322A6C60F78 /* libPods-AlphaVideoTest.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-AlphaVideoTest.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = AlphaVideoTest/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = AlphaVideoTest/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		EB6CBAFA2AE63C6BE0ADA9A2 /* media */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; name = media; path = ../assets/media; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		PERFMETRICS002 /* PerformanceMetrics.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = PerformanceMetrics.m; path = AlphaVideoTest/PerformanceMetrics.m; sourceTree = "<group>"; };
 		PERFMETRICS003 /* AlphaVideoTest-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "AlphaVideoTest-Bridging-Header.h"; path = "AlphaVideoTest/AlphaVideoTest-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -80,6 +82,7 @@
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
+				EB6CBAFA2AE63C6BE0ADA9A2 /* media */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -166,6 +169,7 @@
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				1DF79F42FC0941C60B9F0527 /* PrivacyInfo.xcprivacy in Resources */,
+				4E99E31E1B1E082AB29E7268 /* media in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

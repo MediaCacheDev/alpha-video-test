@@ -42,12 +42,6 @@ const imageLoaderConfiguration = {
   type: 'asset/resource',
 };
 
-// Asset loader for KTX2, WebM, etc.
-const assetLoaderConfiguration = {
-  test: /\.(ktx2|glb|webm|apng|avif|zst)$/,
-  type: 'asset/resource',
-};
-
 module.exports = {
   entry: path.resolve(appDirectory, 'index.web.js'),
   output: {
@@ -65,27 +59,27 @@ module.exports = {
     rules: [
       babelLoaderConfiguration,
       imageLoaderConfiguration,
-      assetLoaderConfiguration,
     ],
   },
   plugins: [
     new HtmlWebpackPlugin({
       template: path.resolve(appDirectory, 'web/index.html'),
     }),
+    // The players resolve asset://media/x to /media/x on the web.
     new CopyWebpackPlugin({
       patterns: [
         {
-          from: path.resolve(appDirectory, 'src/assets'),
-          to: 'assets',
+          from: path.resolve(appDirectory, 'assets'),
           noErrorOnMissing: true,
         },
       ],
     }),
   ],
   devServer: {
-    static: {
-      directory: path.resolve(appDirectory, 'dist'),
-    },
+    static: [
+      { directory: path.resolve(appDirectory, 'dist') },
+      { directory: path.resolve(appDirectory, 'assets'), publicPath: '/' },
+    ],
     hot: true,
     port: 8080,
     open: true,
