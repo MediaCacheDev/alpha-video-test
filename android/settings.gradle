@@ -4,7 +4,6 @@ plugins { id("com.facebook.react.settings") }
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
-        mavenLocal() // for local FFmpegKit AAR
         google()
         mavenCentral()
         maven { url 'https://www.jitpack.io' }
