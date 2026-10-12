@@ -30,7 +30,7 @@ import { usePerformanceMetrics } from './src/hooks/usePerformanceMetrics';
 // import { KTX2PlayerView } from 'react-native-ktx2player';
 import { AlphaVideoGpuView } from 'alpha-video-gpu';
 import { WebMAlphaView } from 'react-native-webm-alpha-player-js';
-import { WebMAlphaView as WebMAlphaViewCpp } from 'react-native-webm-alpha-player';
+import { AlphaVideoView } from 'react-native-alpha-video';
 import { AnimatedImageView } from 'react-native-apng-avif';
 
 // Asset definitions per animation
@@ -395,7 +395,7 @@ function AppContent() {
               />
             );
             if (instance.type === 'webmcpp') return (
-              <WebMAlphaViewCpp
+              <AlphaVideoView
                 style={sizeStyle}
                 source={{ uri: webmUri }}
                 autoPlay

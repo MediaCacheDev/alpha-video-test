@@ -1900,6 +1900,8 @@ PODS:
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
     - SocketRocket
+  - react-native-alpha-video (1.0.0):
+    - React-Core
   - react-native-apng-avif (1.0.0):
     - libavif/libdav1d
     - React-Core
@@ -2610,8 +2612,6 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNWebMAlphaPlayer (1.0.0):
-    - React-Core
   - RNWorklets (0.7.1):
     - boost
     - DoubleConversion
@@ -2757,6 +2757,7 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
+  - react-native-alpha-video (from `../node_modules/react-native-alpha-video`)
   - react-native-apng-avif (from `../node_modules/react-native-apng-avif`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-skia (from `../node_modules/@shopify/react-native-skia`)"
@@ -2795,7 +2796,6 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
-  - RNWebMAlphaPlayer (from `../node_modules/react-native-webm-alpha-player`)
   - RNWorklets (from `../node_modules/react-native-worklets`)
   - SDWebImage
   - SDWebImageAVIFCoder
@@ -2901,6 +2901,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   React-microtasksnativemodule:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
+  react-native-alpha-video:
+    :path: "../node_modules/react-native-alpha-video"
   react-native-apng-avif:
     :path: "../node_modules/react-native-apng-avif"
   react-native-safe-area-context:
@@ -2977,8 +2979,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
-  RNWebMAlphaPlayer:
-    :path: "../node_modules/react-native-webm-alpha-player"
   RNWorklets:
     :path: "../node_modules/react-native-worklets"
   Yoga:
@@ -3032,6 +3032,7 @@ SPEC CHECKSUMS:
   React-logger: b8483fa08e0d62e430c76d864309d90576ca2f68
   React-Mapbuffer: 7b72a669e94662359dad4f42b5af005eb24b4e83
   React-microtasksnativemodule: cdc02da075f2857803ed63f24f5f72fc40e094c0
+  react-native-alpha-video: ba3be7917f15146e3f1366d0a7bbc247c0c7e746
   react-native-apng-avif: 73214c2274079683f6c305965601545835aa6195
   react-native-safe-area-context: c00143b4823773bba23f2f19f85663ae89ceb460
   react-native-skia: b60d0b9d9aea330baef956b7f015d0af2b42076d
@@ -3070,7 +3071,6 @@ SPEC CHECKSUMS:
   ReactCodegen: 3d48510bcef445f6403c0004047d4d9cbb915435
   ReactCommon: ac934cb340aee91282ecd6f273a26d24d4c55cae
   RNGestureHandler: cd4be101cfa17ea6bbd438710caa02e286a84381
-  RNWebMAlphaPlayer: 6b0627537231dcb7828a3197e64ee1581885bd5d
   RNWorklets: 69f7239afaf3a156f7f9549eeb0ae8d02adc095f
   SDWebImage: e9c98383c7572d713c1a0d7dd2783b10599b9838
   SDWebImageAVIFCoder: afe194a084e851f70228e4be35ef651df0fc5c57
