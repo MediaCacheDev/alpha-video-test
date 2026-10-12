@@ -13,9 +13,9 @@ export const PerformancePanel: React.FC<PerformancePanelProps> = ({ metrics }) =
     return '#F44336';
   };
 
-  const getCpuColor = (cpu: number) => {
-    if (cpu <= 100) return '#4CAF50';
-    if (cpu <= 150) return '#FFC107';
+  const getCpuColor = (cpuPercentOfDevice: number) => {
+    if (cpuPercentOfDevice <= 50) return '#4CAF50';
+    if (cpuPercentOfDevice <= 80) return '#FFC107';
     return '#F44336';
   };
 
@@ -47,6 +47,11 @@ export const PerformancePanel: React.FC<PerformancePanelProps> = ({ metrics }) =
           <Text style={[styles.value, { color: metrics.isRealCpuUsage ? getCpuColor(metrics.cpuUsage) : '#666' }]}>
             {metrics.isRealCpuUsage ? `${metrics.cpuUsage}%` : '—'}
           </Text>
+          {metrics.isRealCpuUsage && metrics.cpuCoreCount > 0 && (
+            <Text style={styles.subValue}>
+              {metrics.cpuCoresBusy.toFixed(1)} / {metrics.cpuCoreCount} cores
+            </Text>
+          )}
         </View>
 
         <View style={styles.metric}>
@@ -143,6 +148,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+    fontVariant: ['tabular-nums'],
+  },
+  subValue: {
+    color: '#888',
+    fontSize: 9,
     fontVariant: ['tabular-nums'],
   },
   countBadge: {

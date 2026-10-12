@@ -10,6 +10,10 @@ import android.opengl.EGLSurface;
 import android.opengl.GLES20;
 import android.os.Build;
 import android.os.Debug;
+import android.os.Process;
+import android.os.SystemClock;
+import android.system.Os;
+import android.system.OsConstants;
 
 import androidx.annotation.NonNull;
 
@@ -19,17 +23,11 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableNativeMap;
-
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.RandomAccessFile;
-
 public class PerformanceMetricsModule extends ReactContextBaseJavaModule {
     private final ReactApplicationContext reactContext;
     
-    // For tracking CPU usage between calls
-    private long lastCpuTime = 0;
-    private long lastAppCpuTime = 0;
+    private long lastCpuTimeMs = 0;
+    private long lastWallTimeMs = 0;
 
     public PerformanceMetricsModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -47,10 +45,12 @@ public class PerformanceMetricsModule extends ReactContextBaseJavaModule {
         try {
             WritableMap metrics = new WritableNativeMap();
 
-            // Get CPU usage - REAL app CPU usage from /proc/self/stat
-            float[] cpuResult = getCpuUsage();
-            metrics.putDouble("cpuUsage", cpuResult[0]);
-            metrics.putBoolean("isRealCpuUsage", cpuResult[1] == 1);
+            double cpuCoresBusy = getCpuCoresBusy();
+            int cpuCoreCount = getCpuCoreCount();
+            metrics.putDouble("cpuCoresBusy", cpuCoresBusy);
+            metrics.putInt("cpuCoreCount", cpuCoreCount);
+            metrics.putDouble("cpuUsage", Math.min(100, cpuCoresBusy / cpuCoreCount * 100));
+            metrics.putBoolean("isRealCpuUsage", true);
 
             // Get memory info
             ActivityManager activityManager = (ActivityManager) reactContext.getSystemService(Context.ACTIVITY_SERVICE);
@@ -84,71 +84,28 @@ public class PerformanceMetricsModule extends ReactContextBaseJavaModule {
     }
 
     /**
-     * Get REAL CPU usage for this app from /proc/self/stat
-     * Returns: [cpuUsage, isRealCpuUsage]
-     * isRealCpuUsage: 1 = real from /proc/self/stat, 0 = not available
+     * CPU time used by all of this app's threads since the previous call, divided by the
+     * wall time between the calls. Returns the number of cores kept busy on average,
+     * e.g. 1.5 = one and a half cores. Returns 0 on the first call.
      */
-    private float[] getCpuUsage() {
-        float[] result = new float[]{0, 0};
-        
-        try {
-            // Read app's CPU time from /proc/self/stat (always accessible)
-            RandomAccessFile reader = new RandomAccessFile("/proc/self/stat", "r");
-            String line = reader.readLine();
-            reader.close();
-            
-            // /proc/self/stat format: pid (comm) state utime stime cutime cstime ...
-            // Find the closing parenthesis of comm field (can contain spaces)
-            int commEnd = line.indexOf(") ");
-            if (commEnd < 0) {
-                return result; // Invalid format
-            }
-            String afterComm = line.substring(commEnd + 2);
-            String[] fields = afterComm.split(" ");
-            
-            // After (comm), fields are: state(0) ppid(1) pgrp(2) session(3) tty_nr(4) 
-            // tpgid(5) flags(6) minflt(7) cminflt(8) majflt(9) cmajflt(10) 
-            // utime(11) stime(12) cutime(13) cstime(14) ...
-            if (fields.length < 13) {
-                return result; // Not enough fields
-            }
-            
-            long utime = Long.parseLong(fields[11]);
-            long stime = Long.parseLong(fields[12]);
-            long appCpuTime = utime + stime;
-            
-            // Get elapsed time in clock ticks
-            long currentTimeMs = System.currentTimeMillis();
-            
-            // Calculate CPU usage since last call
-            if (lastCpuTime > 0) {
-                long timeDeltaMs = currentTimeMs - lastCpuTime;
-                long appCpuDelta = appCpuTime - lastAppCpuTime;
-                
-                if (timeDeltaMs > 0 && appCpuDelta >= 0) {
-                    // Convert clock ticks to milliseconds (USER_HZ is typically 100, so 1 tick = 10ms)
-                    long appCpuDeltaMs = appCpuDelta * 10;
-                    // CPU usage as percentage
-                    float usage = (float) appCpuDeltaMs / timeDeltaMs * 100;
-                    result[0] = Math.max(0, Math.min(usage, 100)); // Clamp 0-100%
-                    result[1] = 1; // Mark as REAL
-                }
-            } else {
-                // First call - we have data but can't calculate delta yet
-                // Mark as real but 0% (will show real value on next call)
-                result[1] = 1;
-            }
-            
-            // Store for next call
-            lastCpuTime = currentTimeMs;
-            lastAppCpuTime = appCpuTime;
-            
-        } catch (Exception e) {
-            // Return 0 with isReal=0 on error
-            android.util.Log.e("PerformanceMetrics", "CPU read error: " + e.getMessage());
+    private double getCpuCoresBusy() {
+        long cpuTimeMs = Process.getElapsedCpuTime();
+        long wallTimeMs = SystemClock.elapsedRealtime();
+
+        double coresBusy = 0;
+        if (lastWallTimeMs > 0 && wallTimeMs > lastWallTimeMs) {
+            coresBusy = (double) (cpuTimeMs - lastCpuTimeMs) / (wallTimeMs - lastWallTimeMs);
         }
-        
-        return result;
+
+        lastCpuTimeMs = cpuTimeMs;
+        lastWallTimeMs = wallTimeMs;
+        return Math.max(0, coresBusy);
+    }
+
+    /** Configured cores, not just online ones: idle devices take cores offline. */
+    private static int getCpuCoreCount() {
+        long configured = Os.sysconf(OsConstants._SC_NPROCESSORS_CONF);
+        return configured > 0 ? (int) configured : Runtime.getRuntime().availableProcessors();
     }
 
     /**

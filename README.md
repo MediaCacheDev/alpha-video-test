@@ -69,7 +69,7 @@ npx react-native run-android
 The bottom panel shows:
 - **FPS** - Frames per second (green = 55+, yellow = 30+, red = <30)
 - **Frame** - Average frame time in milliseconds
-- **CPU** - Real CPU usage from kernel API (iOS/Android)
+- **CPU** - The app's CPU time across all threads as a share of the whole device (iOS/Android), with the average number of cores kept busy underneath (e.g. `1.8 / 8 cores`)
 - **RAM** - App memory usage
 - **GPU Mem** - GPU memory usage (when available)
 - **Instance counts** - Number of each animation type

@@ -1,12 +1,16 @@
 #import <React/RCTBridgeModule.h>
 #import <Metal/Metal.h>
 #import <mach/mach.h>
+#import <sys/resource.h>
 
 @interface PerformanceMetrics : NSObject <RCTBridgeModule>
 @property (nonatomic, strong) id<MTLDevice> sharedDevice;
 @end
 
-@implementation PerformanceMetrics
+@implementation PerformanceMetrics {
+    double _lastCpuTime;
+    NSTimeInterval _lastWallTime;
+}
 
 RCT_EXPORT_MODULE();
 
@@ -27,31 +31,18 @@ RCT_EXPORT_METHOD(getMetrics:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject) {
     NSMutableDictionary *metrics = [NSMutableDictionary dictionary];
     
-    // Get REAL CPU usage from Mach kernel thread_info API
-    thread_array_t threadList;
-    mach_msg_type_number_t threadCount;
-    thread_info_data_t threadInfo;
-    mach_msg_type_number_t threadInfoCount;
-    
-    float totalCPU = 0;
-    BOOL isRealCpuUsage = NO;
-    
-    if (task_threads(mach_task_self(), &threadList, &threadCount) == KERN_SUCCESS) {
-        for (int i = 0; i < threadCount; i++) {
-            threadInfoCount = THREAD_INFO_MAX;
-            if (thread_info(threadList[i], THREAD_BASIC_INFO, (thread_info_t)threadInfo, &threadInfoCount) == KERN_SUCCESS) {
-                thread_basic_info_t basicInfo = (thread_basic_info_t)threadInfo;
-                if (!(basicInfo->flags & TH_FLAGS_IDLE)) {
-                    totalCPU += basicInfo->cpu_usage / (float)TH_USAGE_SCALE * 100.0;
-                }
-            }
-        }
-        vm_deallocate(mach_task_self(), (vm_offset_t)threadList, threadCount * sizeof(thread_t));
-        isRealCpuUsage = YES; // Successfully read from Mach kernel API
+    struct rusage usage;
+    if (getrusage(RUSAGE_SELF, &usage) == 0) {
+        double cpuCoresBusy = [self cpuCoresBusySince:usage];
+        NSUInteger cpuCoreCount = MAX(1, [NSProcessInfo processInfo].activeProcessorCount);
+        metrics[@"cpuCoresBusy"] = @(cpuCoresBusy);
+        metrics[@"cpuCoreCount"] = @(cpuCoreCount);
+        metrics[@"cpuUsage"] = @(MIN(100.0, cpuCoresBusy / cpuCoreCount * 100.0));
+        metrics[@"isRealCpuUsage"] = @(YES);
+    } else {
+        metrics[@"cpuUsage"] = @(0);
+        metrics[@"isRealCpuUsage"] = @(NO);
     }
-    
-    metrics[@"cpuUsage"] = @(totalCPU);
-    metrics[@"isRealCpuUsage"] = @(isRealCpuUsage);
     
     // Get detailed memory info using task_vm_info (includes graphics/IOKit memory)
     task_vm_info_data_t vmInfo;
@@ -139,6 +130,23 @@ RCT_EXPORT_METHOD(getMetrics:(RCTPromiseResolveBlock)resolve
     metrics[@"memoryTotal"] = @([NSProcessInfo processInfo].physicalMemory / 1024 / 1024); // MB
     
     resolve(metrics);
+}
+
+// CPU time used by all of the app's threads since the previous call, divided by the
+// wall time between the calls: the number of cores kept busy on average. 0 on the first call.
+- (double)cpuCoresBusySince:(struct rusage)usage {
+    double cpuTime = usage.ru_utime.tv_sec + usage.ru_utime.tv_usec / 1e6
+                   + usage.ru_stime.tv_sec + usage.ru_stime.tv_usec / 1e6;
+    NSTimeInterval wallTime = [NSProcessInfo processInfo].systemUptime;
+
+    double coresBusy = 0;
+    if (_lastWallTime > 0 && wallTime > _lastWallTime) {
+        coresBusy = (cpuTime - _lastCpuTime) / (wallTime - _lastWallTime);
+    }
+
+    _lastCpuTime = cpuTime;
+    _lastWallTime = wallTime;
+    return MAX(0, coresBusy);
 }
 
 @end

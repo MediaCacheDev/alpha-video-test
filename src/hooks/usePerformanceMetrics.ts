@@ -12,7 +12,9 @@ export interface PerformanceMetrics {
   frameTime: number;
   memoryUsed: number;
   memoryTotal: number;
-  cpuUsage: number;
+  cpuUsage: number; // share of the whole device, 0-100
+  cpuCoresBusy: number; // app CPU time / wall time, e.g. 1.5 = one and a half cores
+  cpuCoreCount: number;
   isRealCpuUsage: boolean; // true = real CPU usage from kernel API, false = not available
   gpuMemoryUsed: number;
   gpuMemoryTotal: number;
@@ -28,6 +30,8 @@ export const usePerformanceMetrics = (ktx2Count: number, ktx2ZstCount: number = 
     memoryUsed: 0,
     memoryTotal: 0,
     cpuUsage: 0,
+    cpuCoresBusy: 0,
+    cpuCoreCount: 0,
     isRealCpuUsage: false,
     gpuMemoryUsed: 0,
     gpuMemoryTotal: 0,
@@ -99,6 +103,8 @@ export const usePerformanceMetrics = (ktx2Count: number, ktx2ZstCount: number = 
           memoryUsed: nativeMetrics.memoryUsed || 0,
           memoryTotal: nativeMetrics.memoryTotal || 0,
           cpuUsage: Math.round(nativeMetrics.cpuUsage || 0),
+          cpuCoresBusy: nativeMetrics.cpuCoresBusy || 0,
+          cpuCoreCount: nativeMetrics.cpuCoreCount || 0,
           isRealCpuUsage: nativeMetrics.isRealCpuUsage === true,
           gpuMemoryUsed: nativeMetrics.gpuMemoryUsed || 0,
           gpuMemoryTotal: nativeMetrics.gpuMemoryTotal || 0,
