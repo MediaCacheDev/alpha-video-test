@@ -124,6 +124,9 @@ function AppContent() {
   const [useDecodeQueue, setUseDecodeQueue] = useState(true);
   const [streamCacheSize, setStreamCacheSize] = useState(30);
   const [streamPrefetchAhead, setStreamPrefetchAhead] = useState(15);
+
+  // Playback mode for WebM FFmpegKit
+  const [webmKitStream, setWebmKitStream] = useState(true);
   
   // Render at real video resolution vs scaled thumbnail
   const [useRealSize, setUseRealSize] = useState(false);
@@ -385,6 +388,7 @@ function AppContent() {
               <WebMAlphaView
                 style={sizeStyle}
                 source={{ uri: webmUri }}
+                mode={webmKitStream ? 'stream' : 'preload'}
                 autoPlay
                 loop
                 onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
@@ -589,6 +593,20 @@ function AppContent() {
               <Text style={styles.arrowText}>+</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      </View>}
+
+      {/* WebM FFmpegKit Settings Panel */}
+      {showSettings && <View style={[styles.streamingPanel, { top: insets.top + 470 }]}>
+        <Text style={styles.streamingTitle}>WebM FFmpegKit</Text>
+        <View style={styles.streamingRow}>
+          <Text style={styles.streamingLabel}>Stream</Text>
+          <Switch
+            value={webmKitStream}
+            onValueChange={setWebmKitStream}
+            trackColor={{ false: '#555', true: '#4a9' }}
+            thumbColor={webmKitStream ? '#fff' : '#888'}
+          />
         </View>
       </View>}
 
