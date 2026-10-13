@@ -29,7 +29,36 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       launchOptions: launchOptions
     )
 
+    watchPixelTestLinks()
     return true
+  }
+
+  private var pixelTestTimer: Timer?
+  private var lastPixelTestLink: String?
+
+  /// The pixel-test driver (testing/pixels) writes each link to Documents/pixeltest/link.txt:
+  /// `simctl openurl` would ask "Open in AlphaVideoTest?" every time.
+  private func watchPixelTestLinks() {
+    guard let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+    let folder = documents.appendingPathComponent("pixeltest")
+    guard FileManager.default.fileExists(atPath: folder.path) else { return }
+    let file = folder.appendingPathComponent("link.txt")
+    pixelTestTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+      guard let self,
+            let link = try? String(contentsOf: file, encoding: .utf8),
+            link != self.lastPixelTestLink,
+            let url = URL(string: link) else { return }
+      self.lastPixelTestLink = link
+      RCTLinkingManager.application(UIApplication.shared, open: url, options: [:])
+    }
+  }
+
+  func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+  ) -> Bool {
+    RCTLinkingManager.application(app, open: url, options: options)
   }
 }
 

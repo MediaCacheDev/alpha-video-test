@@ -74,6 +74,18 @@ The bottom panel shows:
 - **GPU Mem** - GPU memory usage (when available)
 - **Instance counts** - Number of each animation type
 
+## Pixel tests
+
+`testing/` checks what the players actually draw against generated test cards:
+
+```sh
+npm run testcards                              # generate the cards and fixtures (testing/build/testcard)
+npm run testcards:reference                    # probe FFmpeg's and KTX-Software's decodes, and the player models
+npm run test:pixels -- --platform android      # or ios; --only <regex>, --frames 0,37
+```
+
+`test:pixels` needs the release build installed on a booted emulator or simulator. It copies the fixtures over, opens `alphavideotest://pixeltest?…` links (on iOS, by writing them to the app's `Documents/pixeltest/link.txt`), captures each frame over black and over white, and writes `testing/build/pixels/<platform>/report.html`. Cases listed in `testing/pixels/known.ts` fail for known reasons and don't fail the run.
+
 ---
 
 # Getting Started
