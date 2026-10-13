@@ -120,12 +120,39 @@ interface Planes {
   chromaHeight: number;
 }
 
+/** FFprobe's colour tags for a stream, e.g. `{ range: 'tv', space: 'bt709' }`. */
+function streamColour(file: string, stream: number): { range: string; space: string } {
+  const [range = 'unknown', space = 'unknown'] = run('ffprobe', ['-v', 'error', '-select_streams', `v:${stream}`,
+    '-show_entries', 'stream=color_range,color_space', '-of', 'default=nw=1:nk=1', file]).toString().trim().split('\n');
+  return { range, space };
+}
+
+/**
+ * The players' YUV to RGB matrix (C++ `webm::yuvToRgbFor`, ffmpeg-kit `YuvToRgb`), as rows:
+ * rgb = M * (y, u, v, 1) with samples in 0..1. Unknown range is limited; an unknown matrix is
+ * BT.601 up to 720x576 and BT.709 above.
+ */
+function yuvToRgb(range: string, space: string, w: number, h: number): number[][] {
+  let kr = 0.299, kb = 0.114;
+  if (space === 'bt709' || (space === 'unknown' && !(w <= 720 && h <= 576))) [kr, kb] = [0.2126, 0.0722];
+  else if (space.startsWith('bt2020')) [kr, kb] = [0.2627, 0.0593];
+  const kg = 1 - kr - kb, rv = 2 * (1 - kr), bu = 2 * (1 - kb);
+  const gu = (2 * kb * (1 - kb)) / kg, gv = (2 * kr * (1 - kr)) / kg;
+  const full = range === 'pc';
+  const ys = full ? 1 : 255 / 219, yo = full ? 0 : 16 / 255, cs = full ? 1 : 255 / 224, co = 128 / 255;
+  return [
+    [ys, 0, rv * cs, -ys * yo - rv * cs * co],
+    [ys, -gu * cs, -gv * cs, -ys * yo + (gu + gv) * cs * co],
+    [ys, bu * cs, 0, -ys * yo - bu * cs * co],
+  ];
+}
+
 /**
  * The fragment shader shared by the C++ player and the ffmpeg-kit GPU view on Android and iOS:
- * full-range BT.601, no offset for limited range, colour premultiplied by the alpha plane.
+ * the clip's matrix, colour premultiplied by the alpha plane.
  * Chroma is sampled at the nearest texel of a texture stretched over the frame.
  */
-function shaderToImage(p: Planes, w: number, h: number): Image {
+function shaderToImage(p: Planes, w: number, h: number, m: number[][]): Image {
   const data = new Uint8Array(w * h * 4);
   const clamp = (v: number) => Math.min(1, Math.max(0, v));
   for (let y = 0; y < h; y++) {
@@ -133,17 +160,23 @@ function shaderToImage(p: Planes, w: number, h: number): Image {
     for (let x = 0; x < w; x++) {
       const cx = Math.min(p.chromaWidth - 1, Math.floor(((x + 0.5) / w) * p.chromaWidth));
       const Y = p.y[y * w + x] / 255;
-      const U = p.u[cy * p.chromaStride + cx] / 255 - 0.5;
-      const V = p.v[cy * p.chromaStride + cx] / 255 - 0.5;
+      const U = p.u[cy * p.chromaStride + cx] / 255;
+      const V = p.v[cy * p.chromaStride + cx] / 255;
       const a = p.a[y * w + x] / 255;
       const i = (y * w + x) * 4;
-      data[i] = Math.round(clamp(Y + 1.402 * V) * a * 255);
-      data[i + 1] = Math.round(clamp(Y - 0.344136 * U - 0.714136 * V) * a * 255);
-      data[i + 2] = Math.round(clamp(Y + 1.772 * U) * a * 255);
+      for (let c = 0; c < 3; c++) {
+        data[i + c] = Math.round(clamp(m[c][0] * Y + m[c][1] * U + m[c][2] * V + m[c][3]) * a * 255);
+      }
       data[i + 3] = Math.round(a * 255);
     }
   }
   return { width: w, height: h, data };
+}
+
+/** `YUVAFrame::copyAlphaFromAVFrame`: a limited-range Y plane used as alpha is expanded to 0-255. */
+function expandAlpha(plane: Uint8Array, limited: boolean): Uint8Array {
+  if (!limited) return plane;
+  return plane.map((v) => Math.min(255, Math.max(0, Math.floor(((v - 16) * 255) / 219 + 0.5))));
 }
 
 /** Splits an FFmpeg yuv420p / yuva420p frame (chroma rounded up) into planes. */
@@ -160,48 +193,46 @@ function ffmpegPlanes(frame: Buffer, w: number, h: number): Omit<Planes, 'chroma
 
 /**
  * The C++ player's software path (`YUVAFrame::copyFromAVFrame` + the shader): chroma textures are
- * `w / 2` by `h / 2`, and for two-stream files the alpha is plane 0 of the alpha stream, copied raw.
- * (On Android, two-stream files decode on MediaCodec instead, which converts correctly; that path
- * matches the reference.)
+ * half size rounded up, and for two-stream files the alpha is plane 0 of the alpha stream,
+ * expanded to 0-255 when it's limited-range YUV. (On Android, two-stream files decode on
+ * MediaCodec instead, which converts correctly; that path matches the reference.)
  */
 export async function* cppModel(file: string, layout: Layout): Frames {
   const { width: w, height: h } = layout;
-  const chroma = { chromaWidth: Math.floor(w / 2), chromaHeight: Math.floor(h / 2) };
+  const chroma = { chromaWidth: half(w), chromaHeight: half(h) };
+  const { range, space } = streamColour(file, 0);
+  const m = yuvToRgb(range, space, w, h);
   if (!isDualStream(file)) {
     for await (const frame of ffmpegChunks(['-c:v', 'libvpx-vp9', '-i', file, '-f', 'rawvideo', '-pix_fmt', 'yuva420p', '-'],
       planeBytes.yuva420p(w, h))) {
       const p = ffmpegPlanes(frame, w, h);
-      yield shaderToImage({ ...p, a: p.a!, ...chroma }, w, h);
+      yield shaderToImage({ ...p, a: p.a!, ...chroma }, w, h, m);
     }
     return;
   }
   const alphaFormat = streamPixelFormat(file, 1);
+  const alphaLimited = streamColour(file, 1).range !== 'pc' && !alphaFormat.startsWith('gbr');
   const colour = ffmpegChunks(['-i', file, '-map', '0:v:0', '-f', 'rawvideo', '-pix_fmt', 'yuv420p', '-'], planeBytes.yuv420p(w, h));
   const alpha = ffmpegChunks(['-i', file, '-map', '0:v:1', '-f', 'rawvideo', '-pix_fmt', alphaFormat, '-'], planeBytes[alphaFormat](w, h));
   while (true) {
     const [c, a] = await Promise.all([colour.next(), alpha.next()]);
     if (c.done || a.done) return;
-    yield shaderToImage({ ...ffmpegPlanes(c.value, w, h), a: a.value.subarray(0, w * h), ...chroma }, w, h);
+    const alphaPlane = expandAlpha(a.value.subarray(0, w * h), alphaLimited);
+    yield shaderToImage({ ...ffmpegPlanes(c.value, w, h), a: alphaPlane, ...chroma }, w, h, m);
   }
 }
 
 /**
- * The ffmpeg-kit GPU view (Android and iOS): FFmpeg writes raw yuva420p, and the view slices it into
- * frames of `w*h*2 + 2*(w/2)*(h/2)` bytes with `w/2`-wide chroma planes, then runs the same shader.
+ * The ffmpeg-kit GPU view (Android and iOS): FFmpeg writes raw yuva420p, and the view slices it
+ * with `YuvaLayout` (chroma half size rounded up), then runs the same shader.
  */
 export async function* ffmpegKitGpuModel(file: string, layout: Layout): Frames {
   const { width: w, height: h } = layout;
-  const ySize = w * h, cw = Math.floor(w / 2), ch = Math.floor(h / 2), uvSize = cw * ch;
-  const frameSize = ySize + uvSize + uvSize + ySize;
-  for await (const frame of ffmpegChunks(['-c:v', 'libvpx-vp9', '-i', file, '-an', '-f', 'rawvideo', '-pix_fmt', 'yuva420p', '-'], frameSize)) {
-    yield shaderToImage({
-      y: frame.subarray(0, ySize),
-      u: frame.subarray(ySize, ySize + uvSize),
-      v: frame.subarray(ySize + uvSize, ySize + 2 * uvSize),
-      a: frame.subarray(ySize + 2 * uvSize, frameSize),
-      chromaStride: cw,
-      chromaWidth: cw,
-      chromaHeight: ch,
-    }, w, h);
+  const { range, space } = streamColour(file, 0);
+  const m = yuvToRgb(range, space, w, h);
+  for await (const frame of ffmpegChunks(['-c:v', 'libvpx-vp9', '-i', file, '-an', '-f', 'rawvideo', '-pix_fmt', 'yuva420p', '-'],
+    planeBytes.yuva420p(w, h))) {
+    const p = ffmpegPlanes(frame, w, h);
+    yield shaderToImage({ ...p, a: p.a!, chromaWidth: half(w), chromaHeight: half(h) }, w, h, m);
   }
 }
