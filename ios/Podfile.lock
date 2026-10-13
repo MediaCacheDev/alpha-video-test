@@ -2862,7 +2862,7 @@ DEPENDENCIES:
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-alpha-video (from `../node_modules/react-native-alpha-video`)
   - react-native-alpha-video-ffmpegkit (from `../node_modules/react-native-alpha-video-ffmpegkit`)
-  - react-native-alpha-video-gpu (from `../node_modules/alpha-video-gpu`)
+  - react-native-alpha-video-gpu (from `../node_modules/react-native-alpha-video-gpu`)
   - react-native-apng-avif (from `../node_modules/react-native-apng-avif`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-skia (from `../node_modules/@shopify/react-native-skia`)"
@@ -3008,7 +3008,7 @@ EXTERNAL SOURCES:
   react-native-alpha-video-ffmpegkit:
     :path: "../node_modules/react-native-alpha-video-ffmpegkit"
   react-native-alpha-video-gpu:
-    :path: "../node_modules/alpha-video-gpu"
+    :path: "../node_modules/react-native-alpha-video-gpu"
   react-native-apng-avif:
     :path: "../node_modules/react-native-apng-avif"
   react-native-safe-area-context:

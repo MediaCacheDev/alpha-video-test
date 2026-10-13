@@ -28,7 +28,7 @@ import { usePerformanceMetrics } from './src/hooks/usePerformanceMetrics';
 
 // Import players - all have web support
 // import { KTX2PlayerView } from 'react-native-ktx2player';
-import { AlphaVideoGpuView } from 'alpha-video-gpu';
+import { AlphaVideoGpuView } from 'react-native-alpha-video-gpu';
 import { FFmpegKitAlphaView } from 'react-native-alpha-video-ffmpegkit';
 import { AlphaVideoView } from 'react-native-alpha-video';
 import { AnimatedImageView } from 'react-native-apng-avif';
