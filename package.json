@@ -9,6 +9,8 @@
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest",
+    "testcards": "node testing/testcard/generate.ts",
+    "testcards:reference": "tsc -p testing && node testing/reference.ts",
     "web": "webpack serve --mode development --config webpack.config.js",
     "build:web": "webpack --mode production --config webpack.config.js"
   },
