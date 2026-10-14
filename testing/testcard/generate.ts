@@ -67,6 +67,13 @@ function encodeWebMs(layout: Layout, dir: string, rawPath: string): string[] {
     '-c:v', 'libsvtav1', '-crf', '32', '-preset', '8', ...gop, ...tags,
     '-metadata:s:v:1', 'title=Alpha', path.join(dir, 'dual_av1.webm')]);
   written.push('dual_av1.webm');
+
+  // 10-bit AV1 (Main profile), colour and alpha alike
+  const split10 = split.replace('format=yuv420p[rgb]', 'format=yuv420p10le[rgb]').replace('format=gray[alpha]', 'format=gray10le[alpha]');
+  ffmpeg([...rawInput(layout, rawPath), '-filter_complex', split10, '-map', '[rgb]', '-map', '[alpha]',
+    '-c:v', 'libsvtav1', '-crf', '32', '-preset', '8', ...gop, ...tags,
+    '-metadata:s:v:1', 'title=Alpha', path.join(dir, 'dual_av1_10bit.webm')]);
+  written.push('dual_av1_10bit.webm');
   return written;
 }
 

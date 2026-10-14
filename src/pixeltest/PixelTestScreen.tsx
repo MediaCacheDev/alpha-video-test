@@ -87,6 +87,7 @@ function TestPlayer({ testCase: c, uri, style, onStatus }: {
           {...common}
           mode={c.mode as PlaybackMode | undefined}
           decoder={c.decoder as Decoder | undefined}
+          verbose={c.verbose}
           onLoad={(e) => onLoad(e.decoder)}
           onError={(e) => onError(e.error)}
         />

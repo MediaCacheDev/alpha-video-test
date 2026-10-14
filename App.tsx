@@ -69,7 +69,7 @@ const ASSETS: Record<AssetType, AssetFiles> = {
   mantaDual: {
     webm: media('manta_dual.webm'),
   },
-  // Dual-stream AV1 files (alpha in separate AV1 stream - uses MediaCodec HW decoding)
+  // Dual-stream AV1 files (alpha in separate AV1 stream - MediaCodec on Android, dav1d on iOS)
   glowDualAv1: {
     webm: media('test_webm_dual_av1.webm'),
   },

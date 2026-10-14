@@ -24,6 +24,8 @@ export interface PixelTestCase {
   decoder?: string;
   /** Play and loop from the start instead of showing `frame` paused. */
   play?: boolean;
+  /** The player's verbose logging, for debugging a case by hand (`&verbose=1`). */
+  verbose?: boolean;
 }
 
 const HOST = 'alphavideotest://pixeltest';
@@ -31,7 +33,7 @@ const HOST = 'alphavideotest://pixeltest';
 export function pixelTestUrl(c: PixelTestCase): string {
   const params: [string, string | number | undefined][] = [
     ['player', c.player], ['root', c.root], ['card', c.card], ['fixture', c.fixture],
-    ['frame', c.frame], ['bg', c.bg], ['mode', c.mode], ['decoder', c.decoder], ['play', c.play ? 1 : undefined],
+    ['frame', c.frame], ['bg', c.bg], ['mode', c.mode], ['decoder', c.decoder], ['play', c.play ? 1 : undefined], ['verbose', c.verbose ? 1 : undefined],
   ];
   const query = params
     .filter(([, v]) => v !== undefined)
@@ -62,6 +64,7 @@ export function parsePixelTestUrl(url: string | null | undefined): PixelTestCase
     mode: params.get('mode') || undefined,
     decoder: params.get('decoder') || undefined,
     play: params.get('play') === '1',
+    verbose: params.get('verbose') === '1',
   };
 }
 

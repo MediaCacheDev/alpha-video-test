@@ -102,19 +102,20 @@ function casesFor(card: string, fixture: string, file: string, platform: string)
   if (platform === 'android') {
     // Every WebM card has colour and alpha as separate bitstreams (a YUVA file's alpha is in
     // BlockAdditional), so MediaCodec can take them, ignoring `mode`. Each engine runs besides
-    // 'auto': FFmpeg has no AV1, no Android decoder lists VP9 profile 1 (a gbrp alpha track), and
-    // the test devices have no AV1 hardware decoder.
+    // 'auto': no Android decoder lists VP9 profile 1 (a gbrp alpha track), and the test devices
+    // have no AV1 hardware decoder.
     const mediaCodec = !isDualStream(file) || streamPixelFormat(file, 1) !== 'gbrp';
     return [
       as('cpp'),
-      ...(av1 ? [] : [as('cpp', undefined, 'ffmpeg'), as('cpp', 'stream', 'ffmpeg')]),
+      as('cpp', undefined, 'ffmpeg'),
+      as('cpp', 'stream', 'ffmpeg'),
       ...(mediaCodec && !av1 ? [as('cpp', undefined, 'mediacodec-hw')] : []),
       ...(mediaCodec ? [as('cpp', undefined, 'mediacodec-sw')] : []),
       ...(isDualStream(file) ? [] : [as('ffk-gpu'), as('ffk-gpu', 'preload'), as('ffk-cpu')]),
     ];
   }
-  // Elsewhere the C++ core decodes dual-stream files, VP9 only.
-  const cpp = av1 ? [] : [as('cpp'), as('cpp', 'stream')];
+  // Elsewhere the C++ core decodes dual-stream files: libvpx for VP9, dav1d for AV1.
+  const cpp = [as('cpp'), as('cpp', 'stream')];
   if (isDualStream(file)) return cpp;
   return [...cpp, as('ffk-gpu'), as('ffk-gpu', 'preload'), as('ffk-cpu')];
 }

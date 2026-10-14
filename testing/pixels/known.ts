@@ -25,6 +25,11 @@ export const KNOWN_ISSUES: { match: RegExp; reason: string; emulatorOnly?: boole
     reason: 'Emulator: no GL_EXT_YUV_target, so the driver converts the software decoders\' frames (AV1 has no other), as BT.601 whatever their colour tags',
     emulatorOnly: true,
   },
+  {
+    match: /^android card_\d+x\d+\/dual_av1_10bit\.webm cpp /,
+    reason: 'Emulator on Apple silicon: its CPU features list sve2, which the host can\'t run, so dav1d\'s 10-bit put_8tap_sve2 dies with SIGILL, in Android\'s c2.android.av1-dav1d as in the C++ core',
+    emulatorOnly: true,
+  },
 ];
 
 export function knownIssueFor(label: string, emulator: boolean): string | undefined {
