@@ -75,16 +75,7 @@ const KTX2_VARIANTS: { name: string; args: string[] }[] = [
   { name: 'astc4x4_nozstd.ktx2', args: ['--astc-block', '4x4', '--zstd', '0'] },
   { name: 'astc6x6.ktx2', args: ['--astc-block', '6x6'] },
   { name: 'astc8x8.ktx2', args: ['--astc-block', '8x8'] },
-  { name: 'uastc.ktx2', args: ['--uastc'] },
-  { name: 'astc4x4_outer.ktx2', args: ['--astc-block', '4x4', '--outer-compression'] },
   { name: 'astc4x4_stream.ktx2', args: ['--astc-block', '4x4', '--use-stream-encoder'] },
-];
-
-// Atlas packings (frames in a grid, split into a GLB of parts past --max-texture-size). The probe
-// reads one frame per image, so these are for the container parsers only (containers.json).
-const KTX2_CONTAINERS: { name: string; args: string[] }[] = [
-  { name: 'atlas.ktx2', args: ['--astc-block', '4x4', '--mode', 'atlas'] },
-  { name: 'atlas_parts.ktx2', args: ['--astc-block', '4x4', '--mode', 'atlas', '--max-texture-size', '1024'] },
 ];
 
 function encodeKTX2s(layout: Layout, dir: string, variants: typeof KTX2_VARIANTS): string[] {
@@ -94,7 +85,7 @@ function encodeKTX2s(layout: Layout, dir: string, variants: typeof KTX2_VARIANTS
     const before = new Set(fs.readdirSync(dir));
     run('node', [texenc, '-y', '-i', framesDir, '-o', path.join(dir, variant.name), '-f', String(layout.fps), ...variant.args],
       { cwd: dir });
-    written.push(...fs.readdirSync(dir).filter((f) => !before.has(f) && /\.(ktx2(\.zst)?|glb)$/.test(f)));
+    written.push(...fs.readdirSync(dir).filter((f) => !before.has(f) && /\.ktx2$/.test(f)));
   }
   return written;
 }
@@ -113,12 +104,9 @@ for (const [width, height] of sizes) {
   run('ffmpeg', ['-v', 'error', '-y', ...rawInput(layout, rawPath), '-start_number', '0', path.join(dir, 'frames/f_%03d.png')]);
 
   const fixtures = encodeWebMs(layout, dir, rawPath);
-  const containers: string[] = [];
   if (Math.max(width, height) <= 512) {
     fixtures.push(...encodeKTX2s(layout, dir, KTX2_VARIANTS));
-    containers.push(...encodeKTX2s(layout, dir, KTX2_CONTAINERS));
   }
   fs.writeFileSync(path.join(dir, 'fixtures.json'), JSON.stringify(fixtures, null, 2));
-  fs.writeFileSync(path.join(dir, 'containers.json'), JSON.stringify(containers, null, 2));
-  console.log(`card_${width}x${height}: ${[...fixtures, ...containers].join(', ')}`);
+  console.log(`card_${width}x${height}: ${fixtures.join(', ')}`);
 }

@@ -16,10 +16,6 @@ export const KNOWN_ISSUES: { match: RegExp; reason: string }[] = [
     match: /^android card_1920x1080\/dual_av1\.webm cpp default$/,
     reason: 'Emulator: AV1 from c2.android.av1-dav1d is converted as BT.601 even with every colour tag set (VP9 is right). Check on a device',
   },
-  {
-    match: /^(android|ios) card_\w+\/uastc\.ktx2 gpu /,
-    reason: 'Emulators and the simulator only: UASTC draws the magenta placeholder (no ASTC there; only native ASTC files get the software decode). Check on a device in Layer 3',
-  },
 ];
 
 export function knownIssueFor(label: string): string | undefined {

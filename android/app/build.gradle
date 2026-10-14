@@ -110,7 +110,7 @@ android {
 
     // alpha-video-gpu memory-maps streamed files in place, which only works for stored entries
     androidResources {
-        noCompress += ['ktx2', 'zst', 'glb', 'apng', 'avif']
+        noCompress += ['ktx2', 'apng', 'avif']
     }
     signingConfigs {
         debug {

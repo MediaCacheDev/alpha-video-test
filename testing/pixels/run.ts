@@ -93,7 +93,7 @@ const label = (c: Case) => `${c.card}/${c.fixture} ${c.player} ${c.mode ?? 'defa
 
 function casesFor(card: string, fixture: string, file: string, platform: string): Case[] {
   const as = (player: Player, mode?: string): Case => ({ card, fixture, player, mode, play: args.playback });
-  if (/\.ktx2(\.zst)?$/.test(fixture)) return [as('gpu'), as('gpu', 'stream')];
+  if (/\.ktx2$/.test(fixture)) return [as('gpu'), as('gpu', 'stream')];
   // On Android dual-stream files play through MediaCodec, which ignores `mode`. Elsewhere the
   // C++ core decodes them, VP9 only.
   if (isDualStream(file) && platform === 'android') return [as('cpp')];

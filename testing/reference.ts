@@ -23,7 +23,7 @@ const cardsRoot = path.resolve(i >= 0 ? process.argv[i + 1] : path.join(demoRoot
 type Decoder = { name: string; frames: (file: string, layout: Layout) => Frames };
 
 function decodersFor(file: string): Decoder[] {
-  if (/\.ktx2(\.zst)?$/.test(file)) return [{ name: 'reference (KTX-Software)', frames: referenceKTX2 }];
+  if (/\.ktx2$/.test(file)) return [{ name: 'reference (KTX-Software)', frames: referenceKTX2 }];
   const decoders: Decoder[] = [{ name: 'reference (FFmpeg)', frames: referenceWebM }];
   // The C++ core decodes VP9 only (AV1 plays through MediaCodec), and ffmpeg-kit single streams only.
   if (streamCodec(file, 0) === 'vp9') decoders.push({ name: 'C++ player model', frames: cppModel });

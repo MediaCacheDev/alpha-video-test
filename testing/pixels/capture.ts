@@ -15,8 +15,7 @@ const isMagenta = (s: Screenshot, x: number, y: number) => {
  * corner the origin. Null when the marker isn't on screen (the test screen isn't showing).
  */
 export function findLayout(s: Screenshot, card: { width: number; height: number }): ScreenLayout | null {
-  // The marker's top row is the first magenta run; anything magenta below it (UASTC's
-  // placeholder) is not part of it.
+  // The marker's top row is the first magenta run; anything magenta below it is not part of it.
   let x0 = -1, y0 = -1;
   for (let y = 0; y < s.height / 4 && x0 < 0; y++) {
     for (let x = 0; x < s.width / 4; x++) {

@@ -17,7 +17,7 @@ export const decodedFrameTolerances = {
 } satisfies Record<string, Tolerances>;
 
 export function tolerancesFor(file: string): Tolerances {
-  return /\.ktx2(\.zst)?$/.test(file) ? decodedFrameTolerances.ktx2 : decodedFrameTolerances.webm;
+  return /\.ktx2$/.test(file) ? decodedFrameTolerances.ktx2 : decodedFrameTolerances.webm;
 }
 
 export interface Measured {

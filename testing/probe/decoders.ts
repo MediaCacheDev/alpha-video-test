@@ -2,7 +2,7 @@
  * Decoders that turn a fixture into premultiplied RGBA frames for the probe.
  *
  * - `reference*`: a correct decode, using FFmpeg's own conversion (honours the file's range and
- *   matrix) or KTX-Software's ASTC/UASTC decoder. This sets the codec's error floor.
+ *   matrix) or KTX-Software's ASTC decoder. This sets the codec's error floor.
  * - `*Model`: the same decoded data run through a copy of what a player's code does with it
  *   (plane layout, shader maths). If a model fails where the reference passes, the player is wrong.
  */
@@ -10,7 +10,6 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import zlib from 'node:zlib';
 import type { Layout } from '../testcard/layout.ts';
 import type { Image } from './probe.ts';
 import { run } from '../lib/run.ts';
@@ -91,12 +90,7 @@ export async function* referenceKTX2(file: string, layout: Layout): Frames {
   const { width: w, height: h } = layout;
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ktx2-ref-'));
   try {
-    let ktx2 = file;
-    if (file.endsWith('.zst')) {
-      ktx2 = path.join(dir, 'input.ktx2');
-      fs.writeFileSync(ktx2, zlib.zstdDecompressSync(fs.readFileSync(file)));
-    }
-    run('ktx', ['extract', '--layer', 'all', ktx2, path.join(dir, 'out')]);
+    run('ktx', ['extract', '--layer', 'all', file, path.join(dir, 'out')]);
     const pattern = path.join(dir, 'out', 'output_layer%d.png');
     for await (const frame of ffmpegChunks(['-start_number', '0', '-i', pattern, '-f', 'rawvideo', '-pix_fmt', 'rgba', '-'], w * h * 4)) {
       yield { width: w, height: h, data: new Uint8Array(frame) };

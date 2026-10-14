@@ -3137,7 +3137,7 @@ SPEC CHECKSUMS:
   React-microtasksnativemodule: cdc02da075f2857803ed63f24f5f72fc40e094c0
   react-native-alpha-video: 11948a5be4e6211908d55d9c72e9ded612b63149
   react-native-alpha-video-ffmpegkit: e04ee183e12de0000e20b5f51be0a260fc8a1424
-  react-native-alpha-video-gpu: 8d93d5fe6a47e6b3029d6879f081e57243341201
+  react-native-alpha-video-gpu: b621f79da76dd4e9ed834123436e458fe20e0c24
   react-native-apng-avif: 7945c7d8b5737cc61777cd1fa2a2de42cef2c817
   react-native-safe-area-context: c00143b4823773bba23f2f19f85663ae89ceb460
   react-native-skia: b60d0b9d9aea330baef956b7f015d0af2b42076d
