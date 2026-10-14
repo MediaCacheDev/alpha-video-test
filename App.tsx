@@ -87,13 +87,13 @@ const ASSET_LABELS: Record<AssetType, string> = {
   mantaDualAv1: 'Manta Dual AV1 (HW)',
 };
 
-// The C++ player's decoder choices; MediaCodec exists only on Android, so iOS always uses FFmpeg
+// The C++ player's decoder choices; MediaCodec exists only on Android, so iOS always uses software
 const DECODER_OPTIONS: [Decoder, string][] = [
   ['auto', 'auto'],
   ['mediacodec', 'mc'],
   ['mediacodec-hw', 'mc-hw'],
   ['mediacodec-sw', 'mc-sw'],
-  ['ffmpeg', 'ffmpeg'],
+  ['software', 'software'],
 ];
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -511,7 +511,7 @@ function AppContent() {
             <View style={styles.streamingRow}>
               <Text style={styles.streamingLabel}>Dec</Text>
               <View style={[styles.modeBtn, styles.modeBtnActive]}>
-                <Text style={[styles.modeBtnText, styles.modeBtnTextActive]}>ffmpeg</Text>
+                <Text style={[styles.modeBtnText, styles.modeBtnTextActive]}>software</Text>
               </View>
             </View>
           )}

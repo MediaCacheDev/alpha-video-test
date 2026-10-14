@@ -109,7 +109,8 @@ function TestPlayer({ testCase: c, uri, style, onStatus }: {
         <AlphaVideoGpuView
           ref={ref as React.Ref<never>}
           {...common}
-          stream={c.mode === 'stream'}
+          stream={c.mode == null ? undefined : c.mode === 'stream'}
+          memoryStrategy={c.memoryStrategy as 'vram' | 'ram' | undefined}
           onError={(e) => onError(e.nativeEvent.error)}
         />
       );

@@ -20,8 +20,10 @@ export interface PixelTestCase {
   bg: Background;
   /** The player's `mode` ('preload', 'stream', 'streamAndPreload'); the player's default when absent. */
   mode?: string;
-  /** The C++ player's `decoder` ('auto', 'ffmpeg', 'mediacodec-hw', ...); 'auto' when absent. */
+  /** The C++ player's `decoder` ('auto', 'software', 'mediacodec-hw', ...); 'auto' when absent. */
   decoder?: string;
+  /** The GPU player's `memoryStrategy` ('vram', 'ram'); 'vram' when absent. */
+  memoryStrategy?: string;
   /** Play and loop from the start instead of showing `frame` paused. */
   play?: boolean;
   /** The player's verbose logging, for debugging a case by hand (`&verbose=1`). */
@@ -33,7 +35,7 @@ const HOST = 'alphavideotest://pixeltest';
 export function pixelTestUrl(c: PixelTestCase): string {
   const params: [string, string | number | undefined][] = [
     ['player', c.player], ['root', c.root], ['card', c.card], ['fixture', c.fixture],
-    ['frame', c.frame], ['bg', c.bg], ['mode', c.mode], ['decoder', c.decoder], ['play', c.play ? 1 : undefined], ['verbose', c.verbose ? 1 : undefined],
+    ['frame', c.frame], ['bg', c.bg], ['mode', c.mode], ['decoder', c.decoder], ['memoryStrategy', c.memoryStrategy], ['play', c.play ? 1 : undefined], ['verbose', c.verbose ? 1 : undefined],
   ];
   const query = params
     .filter(([, v]) => v !== undefined)
@@ -63,6 +65,7 @@ export function parsePixelTestUrl(url: string | null | undefined): PixelTestCase
     bg: params.get('bg') === 'white' ? 'white' : 'black',
     mode: params.get('mode') || undefined,
     decoder: params.get('decoder') || undefined,
+    memoryStrategy: params.get('memoryStrategy') || undefined,
     play: params.get('play') === '1',
     verbose: params.get('verbose') === '1',
   };

@@ -5,7 +5,7 @@
  *   npm run test:pixels -- --platform android|ios [--only <regex>] [--frames 0,1,29,30,31,37,59]
  *                          [--playback] [--cards testing/build/testcard] [--out testing/build/pixels/<platform>]
  *
- * `--only` matches "<card>/<fixture> <player> <mode>[ <decoder>]", e.g. `--only "383x217/yuva.webm cpp"`.
+ * `--only` matches "<card>/<fixture> <player> <mode>[ <decoder>][ <memoryStrategy>]", e.g. `--only "383x217/yuva.webm cpp"`.
  * `--playback` plays and loops each case instead, and checks the frame codes keep moving and wrap.
  * Needs the demo's release build installed and the emulator or simulator booted, and the cards
  * generated (npm run testcards). Writes report.json and report.html; exits 1 if any case fails.
@@ -57,10 +57,12 @@ export interface Case {
   card: string;
   fixture: string;
   player: Player;
-  /** Absent: the player's default (C++ preload, ffmpeg-kit stream, GPU player not streaming). */
+  /** Absent: the player's default (stream, for every player). */
   mode?: string;
   /** The C++ player's `decoder`; absent: 'auto'. */
   decoder?: string;
+  /** The GPU player's `memoryStrategy`; absent: 'vram'. */
+  memoryStrategy?: string;
   play?: boolean;
 }
 
@@ -92,12 +94,13 @@ export interface CaseResult extends Case {
 }
 
 const label = (c: Case) =>
-  `${c.card}/${c.fixture} ${c.player} ${c.mode ?? 'default'}${c.decoder ? ` ${c.decoder}` : ''}${c.play ? ' play' : ''}`;
+  `${c.card}/${c.fixture} ${c.player} ${c.mode ?? 'default'}${c.decoder ? ` ${c.decoder}` : ''}` +
+  `${c.memoryStrategy ? ` ${c.memoryStrategy}` : ''}${c.play ? ' play' : ''}`;
 
 function casesFor(card: string, fixture: string, file: string, platform: string): Case[] {
-  const as = (player: Player, mode?: string, decoder?: string): Case =>
-    ({ card, fixture, player, mode, decoder, play: args.playback });
-  if (/\.ktx2$/.test(fixture)) return [as('gpu'), as('gpu', 'stream')];
+  const as = (player: Player, mode?: string, decoder?: string, memoryStrategy?: string): Case =>
+    ({ card, fixture, player, mode, decoder, memoryStrategy, play: args.playback });
+  if (/\.ktx2$/.test(fixture)) return [as('gpu'), as('gpu', 'stream', undefined, 'ram'), as('gpu', 'preload')];
   const av1 = streamCodec(file, 0) === 'av1';
   if (platform === 'android') {
     // Every WebM card has colour and alpha as separate bitstreams (a YUVA file's alpha is in
@@ -107,15 +110,15 @@ function casesFor(card: string, fixture: string, file: string, platform: string)
     const mediaCodec = !isDualStream(file) || streamPixelFormat(file, 1) !== 'gbrp';
     return [
       as('cpp'),
-      as('cpp', undefined, 'ffmpeg'),
-      as('cpp', 'stream', 'ffmpeg'),
+      as('cpp', undefined, 'software'),
+      as('cpp', 'preload', 'software'),
       ...(mediaCodec && !av1 ? [as('cpp', undefined, 'mediacodec-hw')] : []),
       ...(mediaCodec ? [as('cpp', undefined, 'mediacodec-sw')] : []),
       ...(isDualStream(file) ? [] : [as('ffk-gpu'), as('ffk-gpu', 'preload'), as('ffk-cpu')]),
     ];
   }
   // Elsewhere the C++ core decodes dual-stream files: libvpx for VP9, dav1d for AV1.
-  const cpp = [as('cpp'), as('cpp', 'stream')];
+  const cpp = [as('cpp'), as('cpp', 'preload')];
   if (isDualStream(file)) return cpp;
   return [...cpp, as('ffk-gpu'), as('ffk-gpu', 'preload'), as('ffk-cpu')];
 }
@@ -246,7 +249,7 @@ function watchPlayback(device: Device, c: Case, card: Layout, id: string, bg: Ba
 }
 
 function runCase(device: Device, c: Case, caseIndex: number): CaseResult {
-  const id = `${c.card}_${c.fixture}_${c.player}${c.mode ? `_${c.mode}` : ''}${c.decoder ? `_${c.decoder}` : ''}${c.play ? '_play' : ''}`
+  const id = `${c.card}_${c.fixture}_${c.player}${c.mode ? `_${c.mode}` : ''}${c.decoder ? `_${c.decoder}` : ''}${c.memoryStrategy ? `_${c.memoryStrategy}` : ''}${c.play ? '_play' : ''}`
     .replace(/[^\w.-]+/g, '_');
   const cardDir = path.join(args.cards!, c.card);
   const card: Layout = JSON.parse(fs.readFileSync(path.join(cardDir, 'layout.json'), 'utf8'));

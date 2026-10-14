@@ -1,78 +1,49 @@
 # Alpha Video Test
 
-A React Native demo app comparing different **transparent animation formats** with real-time performance metrics.
+A React Native app (Android, iOS and web) that plays the same transparent video in every format these packages support, side by side over a checkerboard, with live FPS, CPU and memory readouts. Spawn as many players of each kind as you like and watch what they cost on your own device.
 
-## Supported Formats
+## The players it compares
 
-| Format | Container | Codec | Description |
-|--------|-----------|-------|-------------|
-| **ASTC** | KTX2 | ASTC | GPU-native compressed textures. Best performance, hardware-decoded directly on GPU. Ideal for games and high-performance apps. |
-| **WebM** | WebM | VP9+Alpha | Video with alpha channel. Good compression, software-decoded. Widely supported on web. |
-| **APNG** | APNG | PNG frames | Animated PNG with full alpha. Lossless, larger file sizes. Good for simple animations. |
-| **AVIF** | AVIF | AV1 | Modern image format with excellent compression and alpha support. Smaller files than APNG. |
+| Button | Package | Format |
+|---|---|---|
+| **+ ASTC** | [alpha-video-gpu](https://github.com/danielkpl2/alpha-video-gpu) | KTX2 ASTC texture array, zstd-compressed, drawn without decoding |
+| **+ Raw** | [alpha-video-gpu](https://github.com/danielkpl2/alpha-video-gpu) | KTX2 ASTC texture array, uncompressed (read straight from the file) |
+| **+ WebM** (C++ FFmpeg) | [alpha-video](https://github.com/danielkpl2/alpha-video) | VP9 alpha WebM, or dual-stream VP9/AV1; MediaCodec in hardware on Android where it can |
+| **+ WebM** (FFmpegKit) | [alpha-video-ffmpegkit](https://github.com/danielkpl2/alpha-video-ffmpegkit) | VP9 alpha WebM, the first attempt, kept as a reference |
+| **+ ExoPlayer** (Android) | in this app (`android/app/src/main/java/com/alphavideotest/exoplayer/`) | VP9 alpha WebM in an ExoPlayer-style view that demuxes and decodes with FFmpeg (ExoPlayer's demuxer drops the alpha); an experiment, not published |
+| **+ APNG**, **+ AVIF** | [react-native-apng-avif](https://github.com/danielkpl2/react-native-apng-avif) | Animated PNG and animated AVIF |
 
-## Features
+The KTX2 files are made with [alpha-video-gpu-encoder](https://github.com/danielkpl2/alpha-video-gpu-encoder). [alpha-video](https://github.com/danielkpl2/alpha-video#alpha-video-or-alpha-video-gpu) explains when to pick a codec and when ASTC.
 
-- **Checkerboard background** - Demonstrates transparency support for all formats
-- **Spawn animations** - Create multiple instances of each format type
-- **Draggable containers** - Move animations around with grip handle
-- **Z-index controls** - Adjust stacking order with up/down arrows or input
-- **Performance metrics** - Real-time FPS, frame time, CPU, RAM, GPU memory, instance counts
-- **Remove instances** - Close button on each container
-- **Color-coded types** - Green (ASTC), Blue (WebM), Purple (APNG), Orange (AVIF)
+The settings panels choose the clip (a 400×400 glow or a 1080p manta, single-stream or dual-stream VP9/AV1), each player's mode (`preload` or `stream`), the C++ player's decoder on Android (`auto`, `mediacodec-hw`, `software`, ...) and the KTX2 streaming buffers. Each tile shows the decoder it ended up on.
+
+## Using the app
+
+- Tap a **+** button to spawn a player; each format has its own border colour.
+- Drag a player by its ✋ grip, change its z-index with ▲/▼ or by typing a number, and close it with ✕. **Clear All** removes every player.
+- The bottom panel shows:
+  - **FPS**: frames per second (green 55+, yellow 30+, red below 30);
+  - **Frame**: the average frame time in milliseconds;
+  - **CPU**: the app's CPU time across all threads as a share of the whole device, with the average number of cores kept busy underneath (e.g. `1.8 / 8 cores`);
+  - **RAM** and **GPU Mem** (where available), and how many players of each kind are running.
 
 ## Setup
 
-### 1. Add test assets
-
-Place your test files in `src/assets/`:
-- `test.ktx2` - ASTC animation in KTX2 container
-- `test_webm.webm` - WebM VP9+Alpha video
-- `test_apng.apng` - Animated PNG
-- `test_avif.avif` - Animated AVIF
-
-### 2. Install dependencies
-
-```bash
+```sh
 npm install
+npm run fetch-media              # downloads the clips into assets/media/ from the media-v1 release
+bundle install && cd ios && bundle exec pod install && cd ..
 ```
 
-### 3. iOS Setup
+Until the packages are on npm, `package.json` installs them from tarballs packed in the sibling repos (`../webmvp9alphaplayer/...`, `../ktx2player/...`, `../react-native-apng-avif/...`).
 
-```bash
-cd ios && pod install && cd ..
+```sh
+npm start                        # Metro
+npm run android                  # or: npm run ios
+npm run web                      # webpack dev server; npm run build:web for a production build
 ```
 
-### 4. Run
-
-```bash
-# iOS
-npx react-native run-ios
-
-# Android
-npx react-native run-android
-```
-
-## Usage
-
-1. Tap **+ ASTC** to spawn an ASTC GPU texture animation (green border)
-2. Tap **+ WebM** to spawn a WebM VP9+Alpha video (blue border)
-3. Tap **+ APNG** to spawn an animated PNG (purple border)
-4. Tap **+ AVIF** to spawn an animated AVIF (orange border)
-5. **Drag** animations by pressing and holding the ✋ grip icon
-6. **Adjust z-index** with ▲/▼ buttons or type a number
-7. **Remove** animations with the ✕ button
-8. **Clear All** removes all instances
-
-## Performance Metrics
-
-The bottom panel shows:
-- **FPS** - Frames per second (green = 55+, yellow = 30+, red = <30)
-- **Frame** - Average frame time in milliseconds
-- **CPU** - The app's CPU time across all threads as a share of the whole device (iOS/Android), with the average number of cores kept busy underneath (e.g. `1.8 / 8 cores`)
-- **RAM** - App memory usage
-- **GPU Mem** - GPU memory usage (when available)
-- **Instance counts** - Number of each animation type
+The pixel tests below need a Release build: `cd android && ./gradlew :app:assembleRelease`, or `xcodebuild` with `-configuration Release` on iOS.
 
 ## Pixel tests
 
@@ -86,101 +57,3 @@ npm run test:pixels -- --platform android --playback   # play and loop each case
 ```
 
 `test:pixels` needs the release build installed on a booted emulator or simulator. It copies the fixtures over, opens `alphavideotest://pixeltest?…` links (on iOS, by writing them to the app's `Documents/pixeltest/link.txt`), captures each frame over black and over white, and writes `testing/build/pixels/<platform>/report.html`. With `--playback` it reads the frame code from screenshots while each case loops, and fails on a stall, a step backwards or no loop. Cases listed in `testing/pixels/known.ts` fail for known reasons and don't fail the run.
-
----
-
-# Getting Started
-
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
-
-## Step 1: Start Metro
-
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
-
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.

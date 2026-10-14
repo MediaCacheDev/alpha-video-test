@@ -1,7 +1,8 @@
 /**
  * Cases that fail for a known reason. A listed case that fails is reported as known and doesn't
  * fail the run; one that passes does, so the entry gets removed. Each pattern matches
- * "<platform> <card>/<fixture> <player> <mode>[ <decoder>]", the mode being "default" when unset.
+ * "<platform> <card>/<fixture> <player> <mode>[ <decoder>][ <memoryStrategy>]", the mode being
+ * "default" when unset.
  * `emulatorOnly` entries apply on an emulator or simulator, not on real hardware.
  */
 export const KNOWN_ISSUES: { match: RegExp; reason: string; emulatorOnly?: boolean }[] = [
