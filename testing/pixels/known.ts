@@ -13,20 +13,12 @@ export const KNOWN_ISSUES: { match: RegExp; reason: string }[] = [
     reason: 'MediaCodec garbles the profile 1 (gbrp) alpha stream',
   },
   {
-    match: /^android card_1920x1080\/dual_(vp9_p0|av1)\.webm cpp /,
-    reason: 'The MediaCodec path converts the BT.709 clip with BT.601 (the decoder is configured without the colour tags)',
-  },
-  {
-    match: /^android card_\w+\/dual_av1\.webm cpp /,
-    reason: 'MediaCodec AV1: a seek to the last frame never shows it (stays on the previous frame)',
+    match: /^android card_1920x1080\/dual_av1\.webm cpp default$/,
+    reason: 'Emulator: AV1 from c2.android.av1-dav1d is converted as BT.601 even with every colour tag set (VP9 is right). Check on a device',
   },
   {
     match: /^(android|ios) card_\w+\/uastc\.ktx2 gpu /,
     reason: 'Emulators and the simulator only: UASTC draws the magenta placeholder (no ASTC there; only native ASTC files get the software decode). Check on a device in Layer 3',
-  },
-  {
-    match: /^android card_(383x217\/astc(6x6|8x8)|256x256\/astc8x8)\.ktx2 gpu stream$/,
-    reason: 'Streaming: a seek from frame 37 to the last frame (59) never shows it',
   },
 ];
 

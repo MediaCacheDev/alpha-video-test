@@ -3,9 +3,10 @@
  * captures each over black and over white, and measures it with the probe.
  *
  *   npm run test:pixels -- --platform android|ios [--only <regex>] [--frames 0,1,29,30,31,37,59]
- *                          [--cards testing/build/testcard] [--out testing/build/pixels/<platform>]
+ *                          [--playback] [--cards testing/build/testcard] [--out testing/build/pixels/<platform>]
  *
  * `--only` matches "<card>/<fixture> <player> <mode>", e.g. `--only "383x217/yuva.webm cpp"`.
+ * `--playback` plays and loops each case instead, and checks the frame codes keep moving and wrap.
  * Needs the demo's release build installed and the emulator or simulator booted, and the cards
  * generated (npm run testcards). Writes report.json and report.html; exits 1 if any case fails.
  */
@@ -30,6 +31,7 @@ const { values: args } = parseArgs({
     platform: { type: 'string' },
     only: { type: 'string' },
     frames: { type: 'string', default: '0,1,29,30,31,37,59' },
+    playback: { type: 'boolean', default: false },
     cards: { type: 'string', default: path.join(demoRoot, 'testing/build/testcard') },
     out: { type: 'string' },
   },
@@ -46,6 +48,10 @@ const SEEK_TIMEOUT_MS = 5_000;
  * from the difference of two of them.
  */
 const CAPTURE_LEVELS = 2;
+/** How long a playback case watches; the 2 s cards loop twice in it. */
+const PLAYBACK_MS = 5_000;
+/** A screenshot takes about 0.3 s, so a frame code seen for longer than this means playback stopped. */
+const MAX_STALL_MS = 1_000;
 
 export interface Case {
   card: string;
@@ -53,10 +59,14 @@ export interface Case {
   player: Player;
   /** Absent: the player's default (C++ preload, ffmpeg-kit stream, GPU player not streaming). */
   mode?: string;
+  play?: boolean;
 }
 
 export interface FrameResult {
+  /** -1 for a playback case. */
   frame: number;
+  /** Playback cases: the frame code in each screenshot. */
+  seenCodes?: (number | null)[];
   /** From opening the link until the frame showed in two screenshots in a row. */
   waitMs: number;
   /** Empty when the frame never showed (see `error`). */
@@ -79,13 +89,15 @@ export interface CaseResult extends Case {
   status: 'pass' | 'fail' | 'known' | 'unexpected pass';
 }
 
-const label = (c: Case) => `${c.card}/${c.fixture} ${c.player} ${c.mode ?? 'default'}`;
+const label = (c: Case) => `${c.card}/${c.fixture} ${c.player} ${c.mode ?? 'default'}${c.play ? ' play' : ''}`;
 
 function casesFor(card: string, fixture: string, file: string, platform: string): Case[] {
-  const as = (player: Player, mode?: string): Case => ({ card, fixture, player, mode });
+  const as = (player: Player, mode?: string): Case => ({ card, fixture, player, mode, play: args.playback });
   if (/\.ktx2(\.zst)?$/.test(fixture)) return [as('gpu'), as('gpu', 'stream')];
-  // The C++ core decodes VP9 only; AV1 plays through MediaCodec, on Android.
-  const cpp = streamCodec(file, 0) === 'vp9' || platform === 'android' ? [as('cpp'), as('cpp', 'stream')] : [];
+  // On Android dual-stream files play through MediaCodec, which ignores `mode`. Elsewhere the
+  // C++ core decodes them, VP9 only.
+  if (isDualStream(file) && platform === 'android') return [as('cpp')];
+  const cpp = streamCodec(file, 0) === 'vp9' ? [as('cpp'), as('cpp', 'stream')] : [];
   if (isDualStream(file)) return cpp;
   return [...cpp, as('ffk-gpu'), as('ffk-gpu', 'preload'), as('ffk-cpu')];
 }
@@ -157,15 +169,74 @@ function waitForFrame(device: Device, card: Layout, frame: number, bg: Backgroun
   return last;
 }
 
+/** Whether frame code `b` can follow `a` during playback: the same, later, or wrapped to the start. */
+function follows(a: number, b: number, frameCount: number): boolean {
+  const ahead = (b - a + frameCount) % frameCount;
+  return ahead < frameCount / 2;
+}
+
+/**
+ * Plays the clip looping, and checks from screenshots that the frame codes keep moving forward and wrap.
+ * `bg` should differ from the previous case's, which tells this case's screen from the last one.
+ */
+function watchPlayback(device: Device, c: Case, card: Layout, id: string, bg: Background): FrameResult {
+  const result: FrameResult = { frame: -1, waitMs: 0, failures: [], controlFailures: [], images: [], seenCodes: [] };
+  device.open(pixelTestUrl({ ...c, root: device.root, frame: 0, bg }));
+  const start = Date.now();
+  let shot: Screenshot | null = null;
+  const codes = result.seenCodes!;
+  const times: number[] = [];
+  while (Date.now() - start < LOAD_TIMEOUT_MS + PLAYBACK_MS) {
+    shot = device.screenshot();
+    const layout = findLayout(shot, card);
+    const luma = layout ? meanLuma(shot, layout.background) : NaN;
+    const onThisScreen = bg === 'black' ? luma < 16 : luma > 239;
+    const code = layout && onThisScreen ? probe(crop(shot, layout.player), card).frameCode : null;
+    if (codes.length === 0 && code === null) continue;
+    if (codes.length === 0) result.waitMs = Date.now() - start;
+    codes.push(code);
+    times.push(Date.now());
+    if (times[times.length - 1] - times[0] > PLAYBACK_MS) break;
+  }
+  if (codes.length === 0) {
+    result.error = `no frame showed in ${LOAD_TIMEOUT_MS / 1000} s`;
+  } else {
+    const problems = new Set<string>();
+    let wraps = 0;
+    let stuckSince = 0;
+    let longestStall = { ms: 0, frame: -1 };
+    for (let i = 1; i < codes.length; i++) {
+      const [a, b] = [codes[i - 1], codes[i]];
+      if (b === null) problems.add('screenshots without a frame code');
+      if (a === null || b === null) continue;
+      if (!follows(a, b, card.frames)) problems.add(`went back from frame ${a} to ${b}`);
+      else if (b < a) wraps++;
+      if (b !== a) stuckSince = i;
+      const stalled = times[i] - times[stuckSince];
+      if (stalled > longestStall.ms) longestStall = { ms: stalled, frame: b };
+    }
+    if (longestStall.ms > MAX_STALL_MS) problems.add(`stuck on frame ${longestStall.frame} for ${(longestStall.ms / 1000).toFixed(1)} s`);
+    if (wraps === 0) problems.add(`never looped in ${PLAYBACK_MS / 1000} s`);
+    result.failures = [...problems];
+  }
+  if ((result.error || result.failures.length > 0) && shot) {
+    const name = `img/${id}_playback_screen.png`;
+    writePng(shot, path.join(outDir, name));
+    result.images.push(name);
+  }
+  return result;
+}
+
 function runCase(device: Device, c: Case, caseIndex: number): CaseResult {
-  const id = `${c.card}_${c.fixture}_${c.player}${c.mode ? `_${c.mode}` : ''}`.replace(/[^\w.-]+/g, '_');
+  const id = `${c.card}_${c.fixture}_${c.player}${c.mode ? `_${c.mode}` : ''}${c.play ? '_play' : ''}`.replace(/[^\w.-]+/g, '_');
   const cardDir = path.join(args.cards!, c.card);
   const card: Layout = JSON.parse(fs.readFileSync(path.join(cardDir, 'layout.json'), 'utf8'));
   for (const rel of [c.fixture, ...frames.map(framePng)]) device.push(path.join(cardDir, rel), `${c.card}/${rel}`);
 
   const base = tolerancesFor(c.fixture);
   const results: FrameResult[] = [];
-  for (const [i, frame] of frames.entries()) {
+  if (c.play) results.push(watchPlayback(device, c, card, id, caseIndex % 2 === 0 ? 'black' : 'white'));
+  for (const [i, frame] of (c.play ? [] : frames).entries()) {
     // Alternate the order so each frame changes the background once, not twice.
     const order: Background[] = i % 2 === 0 ? ['black', 'white'] : ['white', 'black'];
     const shots: Partial<Record<Background, Shown>> = {};
@@ -207,10 +278,11 @@ function runCase(device: Device, c: Case, caseIndex: number): CaseResult {
       }
     }
   }
-  const pass = results.length === frames.length && results.every((r) => !r.error && r.failures.length === 0);
+  const pass = results.length === (c.play ? 1 : frames.length) && results.every((r) => !r.error && r.failures.length === 0);
   const knownIssue = knownIssueFor(`${device.platform} ${label(c)}`);
   const status = knownIssue ? (pass ? 'unexpected pass' : 'known') : pass ? 'pass' : 'fail';
-  const line = results.map((r) => (r.error ? `${r.frame}:ERR` : r.failures.length ? `${r.frame}:FAIL` : `${r.frame}:ok`)).join(' ');
+  const name = (r: FrameResult) => (r.frame < 0 ? 'playback' : r.frame);
+  const line = results.map((r) => (r.error ? `${name(r)}:ERR` : r.failures.length ? `${name(r)}:FAIL` : `${name(r)}:ok`)).join(' ');
   console.log(`${String(caseIndex + 1).padStart(3)} ${status.toUpperCase().padEnd(15)} ${label(c)}  ${line}`);
   if (knownIssue) console.log(`        known: ${knownIssue}`);
   // The same problem on several frames prints once, with the frames.
@@ -218,7 +290,8 @@ function runCase(device: Device, c: Case, caseIndex: number): CaseResult {
   for (const r of results) {
     for (const p of [...r.failures, ...r.controlFailures.map((f) => `control: ${f}`)]) problems.set(p, [...(problems.get(p) ?? []), r.frame]);
   }
-  for (const [p, onFrames] of problems) console.log(`        frame ${onFrames.join(', ')}: ${p}`);
+  for (const [p, onFrames] of problems) console.log(`        ${c.play ? 'playback' : `frame ${onFrames.join(', ')}`}: ${p}`);
+  for (const r of results) if (r.seenCodes && !pass) console.log(`        codes seen: ${r.seenCodes.join(' ')}`);
   for (const r of results) if (r.error) console.log(`        ${r.error}`);
   return { ...c, id, frames: results, pass, knownIssue, status };
 }

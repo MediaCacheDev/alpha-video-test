@@ -29,7 +29,7 @@ export function PixelTestScreen({ testCase: c }: { testCase: PixelTestCase }) {
   const ratio = PixelRatio.get();
   const layout = screenLayout(cardSize(c.card), Math.round(Dimensions.get('window').width * ratio), ratio);
   const folder = `file://${c.root}/${c.card}`;
-  const playerKey = `${c.player}|${c.card}|${c.fixture}|${c.mode ?? ''}`;
+  const playerKey = `${c.player}|${c.card}|${c.fixture}|${c.mode ?? ''}|${c.play ? 'play' : ''}`;
 
   return (
     <View style={[styles.screen, { backgroundColor: c.bg }]}>
@@ -49,7 +49,7 @@ export function PixelTestScreen({ testCase: c }: { testCase: PixelTestCase }) {
         fadeDuration={0}
       />
       <Text style={styles.status}>
-        {c.player} {c.card}/{c.fixture} {c.mode ?? ''} frame {c.frame}: {status}
+        {c.player} {c.card}/{c.fixture} {c.mode ?? ''} {c.play ? 'playing' : `frame ${c.frame}`}: {status}
       </Text>
     </View>
   );
@@ -66,18 +66,18 @@ function TestPlayer({ testCase: c, uri, style, onStatus }: {
 
   // Seeks are ignored until onLoad, so the first one is made there.
   useEffect(() => {
-    if (loaded.current) ref.current?.seekToFrame(c.frame);
-  }, [c.frame]);
+    if (loaded.current && !c.play) ref.current?.seekToFrame(c.frame);
+  }, [c.frame, c.play]);
 
   const onLoad = () => {
     loaded.current = true;
-    ref.current?.seekToFrame(c.frame);
+    if (!c.play) ref.current?.seekToFrame(c.frame);
     onStatus('loaded');
   };
   const onError = (error: string) => onStatus(`error: ${error}`);
   // A new source object could reload the clip, and every link re-renders the screen.
   const source = useMemo(() => ({ uri }), [uri]);
-  const common = { source, autoPlay: false, loop: false, style, onLoad };
+  const common = { source, autoPlay: !!c.play, loop: !!c.play, style, onLoad };
 
   switch (c.player) {
     case 'cpp':

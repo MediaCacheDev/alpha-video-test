@@ -82,9 +82,10 @@ The bottom panel shows:
 npm run testcards                              # generate the cards and fixtures (testing/build/testcard)
 npm run testcards:reference                    # probe FFmpeg's and KTX-Software's decodes, and the player models
 npm run test:pixels -- --platform android      # or ios; --only <regex>, --frames 0,37
+npm run test:pixels -- --platform android --playback   # play and loop each case instead
 ```
 
-`test:pixels` needs the release build installed on a booted emulator or simulator. It copies the fixtures over, opens `alphavideotest://pixeltest?…` links (on iOS, by writing them to the app's `Documents/pixeltest/link.txt`), captures each frame over black and over white, and writes `testing/build/pixels/<platform>/report.html`. Cases listed in `testing/pixels/known.ts` fail for known reasons and don't fail the run.
+`test:pixels` needs the release build installed on a booted emulator or simulator. It copies the fixtures over, opens `alphavideotest://pixeltest?…` links (on iOS, by writing them to the app's `Documents/pixeltest/link.txt`), captures each frame over black and over white, and writes `testing/build/pixels/<platform>/report.html`. With `--playback` it reads the frame code from screenshots while each case loops, and fails on a stall, a step backwards or no loop. Cases listed in `testing/pixels/known.ts` fail for known reasons and don't fail the run.
 
 ---
 

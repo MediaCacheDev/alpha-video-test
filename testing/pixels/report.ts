@@ -10,11 +10,14 @@ const escape = (s: string) => s.replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)
 function cell(r: FrameResult): string {
   const problems = [r.error, ...r.failures, ...r.controlFailures.map((f) => `control: ${f}`)].filter(Boolean) as string[];
   const cls = r.error ? 'err' : r.failures.length ? 'fail' : r.controlFailures.length ? 'warn' : 'ok';
-  const numbers = r.player
-    ? `colours ${r.player.colours.toFixed(1)}, alpha ramp ${r.player.alphaRamp.toFixed(1)}, corners ${r.player.corners.toFixed(1)}, ` +
-      `edge ${r.player.edgePositionPx.toFixed(2)} px, seek ${r.waitMs} ms`
-    : '';
-  return `<td class="${cls}" title="${escape(numbers)}">${r.frame}${problems.map((p) => `<div class="why">${escape(p)}</div>`).join('')}</td>`;
+  const numbers = r.seenCodes
+    ? `frame codes: ${r.seenCodes.join(' ')}`
+    : r.player
+      ? `colours ${r.player.colours.toFixed(1)}, alpha ramp ${r.player.alphaRamp.toFixed(1)}, corners ${r.player.corners.toFixed(1)}, ` +
+        `edge ${r.player.edgePositionPx.toFixed(2)} px, seek ${r.waitMs} ms`
+      : '';
+  const title = r.frame < 0 ? 'playback' : r.frame;
+  return `<td class="${cls}" title="${escape(numbers)}">${title}${problems.map((p) => `<div class="why">${escape(p)}</div>`).join('')}</td>`;
 }
 
 export function writeHtmlReport(file: string, platform: string, results: CaseResult[]): void {
