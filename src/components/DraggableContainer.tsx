@@ -15,6 +15,8 @@ interface DraggableContainerProps {
   initialX: number;
   initialY: number;
   zIndex: number;
+  /** Shown after the ID in the footer, e.g. the decoder a player reported */
+  caption?: string;
   onZIndexChange: (id: string, newZIndex: number) => void;
   onRemove: (id: string) => void;
   children: React.ReactNode;
@@ -26,6 +28,7 @@ export const DraggableContainer: React.FC<DraggableContainerProps> = ({
   initialX,
   initialY,
   zIndex,
+  caption,
   onZIndexChange,
   onRemove,
   children,
@@ -122,7 +125,9 @@ export const DraggableContainer: React.FC<DraggableContainerProps> = ({
 
       {/* Footer with ID */}
       <View style={styles.footer}>
-        <Text style={styles.idText}>#{id.slice(-4)} | z:{zIndex}</Text>
+        <Text style={styles.idText} numberOfLines={1}>
+          #{id.slice(-4)} | z:{zIndex}{caption ? ` | ${caption}` : ''}
+        </Text>
       </View>
     </Animated.View>
   );

@@ -30,7 +30,7 @@ import { usePerformanceMetrics } from './src/hooks/usePerformanceMetrics';
 // import { KTX2PlayerView } from 'react-native-ktx2player';
 import { AlphaVideoGpuView } from 'react-native-alpha-video-gpu';
 import { FFmpegKitAlphaView } from 'react-native-alpha-video-ffmpegkit';
-import { AlphaVideoView } from 'react-native-alpha-video';
+import { AlphaVideoView, type Decoder } from 'react-native-alpha-video';
 import { AnimatedImageView } from 'react-native-apng-avif';
 
 // Asset definitions per animation
@@ -87,6 +87,15 @@ const ASSET_LABELS: Record<AssetType, string> = {
   mantaDualAv1: 'Manta Dual AV1 (HW)',
 };
 
+// The C++ player's decoder choices; MediaCodec exists only on Android, so iOS always uses FFmpeg
+const DECODER_OPTIONS: [Decoder, string][] = [
+  ['auto', 'auto'],
+  ['mediacodec', 'mc'],
+  ['mediacodec-hw', 'mc-hw'],
+  ['mediacodec-sw', 'mc-sw'],
+  ['ffmpeg', 'ffmpeg'],
+];
+
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const DEFAULT_PLAYER_SIZE = 150;
 
@@ -98,6 +107,7 @@ interface AnimationInstance {
   zIndex: number;
   width?: number;  // Actual file width (set after load)
   height?: number; // Actual file height (set after load)
+  decoder?: string; // Engine onLoad reported, e.g. 'mediacodec-hw' (C++ player)
 }
 
 let instanceCounter = 0;
@@ -121,6 +131,7 @@ function AppContent() {
   // Playback mode settings for WebM C++
   // 'preload' | 'stream' | 'streamAndPreload'
   const [webmMode, setWebmMode] = useState<'preload' | 'stream' | 'streamAndPreload'>('stream');
+  const [webmDecoder, setWebmDecoder] = useState<Decoder>('auto');
   const [useDecodeQueue, setUseDecodeQueue] = useState(true);
   const [streamCacheSize, setStreamCacheSize] = useState(30);
   const [streamPrefetchAhead, setStreamPrefetchAhead] = useState(15);
@@ -270,9 +281,11 @@ function AppContent() {
   const handleInstanceLoad = useCallback((id: string, event: any) => {
     const data = event.nativeEvent || event; // Native wraps in nativeEvent, web doesn't
     const { width, height } = data;
-    if (width && height) {
+    // "mediacodec (c2.qti.vp9.decoder, c2.android.vp9.decoder)" -> "mediacodec"
+    const decoder: string | undefined = data.decoder?.split(' (')[0];
+    if ((width && height) || decoder) {
       setInstances(prev =>
-        prev.map(inst => (inst.id === id ? { ...inst, width, height } : inst))
+        prev.map(inst => (inst.id === id ? { ...inst, width: width || inst.width, height: height || inst.height, decoder } : inst))
       );
     }
   }, []);
@@ -304,35 +317,51 @@ function AppContent() {
         </View>
       </View>
 
-      {/* Asset Selector - top left */}
-      {showSettings && <View style={[styles.assetSelector, { top: insets.top + 60 }]}>
-        <View style={styles.assetSwitchRow}>
-          <Text style={styles.assetLabel}>Real Size</Text>
-          <Switch
-            value={useRealSize}
-            onValueChange={setUseRealSize}
-            trackColor={{ false: '#555', true: '#4a9' }}
-            thumbColor={useRealSize ? '#fff' : '#888'}
-          />
+      {showSettings && <View style={[styles.settingsColumnLeft, { top: insets.top + 60 }]}>
+        {/* Asset Selector - top left */}
+        <View style={styles.assetSelector}>
+          <View style={styles.assetSwitchRow}>
+            <Text style={styles.assetLabel}>Real Size</Text>
+            <Switch
+              value={useRealSize}
+              onValueChange={setUseRealSize}
+              trackColor={{ false: '#555', true: '#4a9' }}
+              thumbColor={useRealSize ? '#fff' : '#888'}
+            />
+          </View>
+          <Text style={styles.assetLabel}>Asset:</Text>
+          {(Object.keys(ASSETS) as AssetType[]).map(assetKey => (
+            <TouchableOpacity
+              key={assetKey}
+              style={[
+                styles.assetOption,
+                selectedAsset === assetKey && styles.assetOptionSelected,
+              ]}
+              onPress={() => setSelectedAsset(assetKey)}
+            >
+              <Text style={[
+                styles.assetOptionText,
+                selectedAsset === assetKey && styles.assetOptionTextSelected,
+              ]}>
+                {ASSET_LABELS[assetKey]}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
-        <Text style={styles.assetLabel}>Asset:</Text>
-        {(Object.keys(ASSETS) as AssetType[]).map(assetKey => (
-          <TouchableOpacity
-            key={assetKey}
-            style={[
-              styles.assetOption,
-              selectedAsset === assetKey && styles.assetOptionSelected,
-            ]}
-            onPress={() => setSelectedAsset(assetKey)}
-          >
-            <Text style={[
-              styles.assetOptionText,
-              selectedAsset === assetKey && styles.assetOptionTextSelected,
-            ]}>
-              {ASSET_LABELS[assetKey]}
-            </Text>
-          </TouchableOpacity>
-        ))}
+
+        {/* WebM FFmpegKit Settings Panel, under the asset selector so the right column ends above the spawn buttons */}
+        <View style={styles.streamingPanel}>
+          <Text style={styles.streamingTitle}>WebM FFmpegKit</Text>
+          <View style={styles.streamingRow}>
+            <Text style={styles.streamingLabel}>Stream</Text>
+            <Switch
+              value={webmKitStream}
+              onValueChange={setWebmKitStream}
+              trackColor={{ false: '#555', true: '#4a9' }}
+              thumbColor={webmKitStream ? '#fff' : '#888'}
+            />
+          </View>
+        </View>
       </View>}
 
       {/* Animation instances */}
@@ -344,6 +373,7 @@ function AppContent() {
           initialX={instance.x}
           initialY={instance.y}
           zIndex={instance.zIndex}
+          caption={instance.decoder}
           onZIndexChange={handleZIndexChange}
           onRemove={handleRemove}
         >
@@ -398,6 +428,7 @@ function AppContent() {
                 loop
                 verbose={false}
                 mode={webmMode}
+                decoder={Platform.OS === 'android' ? webmDecoder : undefined}
                 useDecodeQueue={useDecodeQueue}
                 streamCacheSize={streamCacheSize}
                 streamPrefetchAhead={streamPrefetchAhead}
@@ -433,167 +464,179 @@ function AppContent() {
         </DraggableContainer>
       ))}
 
-      {/* WebM C++ Settings Panel */}
-      {showSettings && <View style={[styles.streamingPanel, { top: insets.top + 70 }]}>
-        <Text style={styles.streamingTitle}>WebM C++</Text>
-        <View style={styles.streamingRow}>
-          <Text style={styles.streamingLabel}>Mode</Text>
-          <View style={styles.modeButtons}>
-            <TouchableOpacity
-              style={[styles.modeBtn, webmMode === 'preload' && styles.modeBtnActive]}
-              onPress={() => setWebmMode('preload')}
-            >
-              <Text style={[styles.modeBtnText, webmMode === 'preload' && styles.modeBtnTextActive]}>Pre</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modeBtn, webmMode === 'stream' && styles.modeBtnActive]}
-              onPress={() => setWebmMode('stream')}
-            >
-              <Text style={[styles.modeBtnText, webmMode === 'stream' && styles.modeBtnTextActive]}>Str</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modeBtn, webmMode === 'streamAndPreload' && styles.modeBtnActive]}
-              onPress={() => setWebmMode('streamAndPreload')}
-            >
-              <Text style={[styles.modeBtnText, webmMode === 'streamAndPreload' && styles.modeBtnTextActive]}>Hyb</Text>
-            </TouchableOpacity>
+      {showSettings && <View style={[styles.settingsColumn, { top: insets.top + 70 }]}>
+        {/* WebM C++ Settings Panel */}
+        <View style={styles.streamingPanel}>
+          <Text style={styles.streamingTitle}>WebM C++</Text>
+          <View style={styles.streamingRow}>
+            <Text style={styles.streamingLabel}>Mode</Text>
+            <View style={styles.modeButtons}>
+              <TouchableOpacity
+                style={[styles.modeBtn, webmMode === 'preload' && styles.modeBtnActive]}
+                onPress={() => setWebmMode('preload')}
+              >
+                <Text style={[styles.modeBtnText, webmMode === 'preload' && styles.modeBtnTextActive]}>Pre</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modeBtn, webmMode === 'stream' && styles.modeBtnActive]}
+                onPress={() => setWebmMode('stream')}
+              >
+                <Text style={[styles.modeBtnText, webmMode === 'stream' && styles.modeBtnTextActive]}>Str</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modeBtn, webmMode === 'streamAndPreload' && styles.modeBtnActive]}
+                onPress={() => setWebmMode('streamAndPreload')}
+              >
+                <Text style={[styles.modeBtnText, webmMode === 'streamAndPreload' && styles.modeBtnTextActive]}>Hyb</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          {Platform.OS === 'android' && (
+            <View style={styles.streamingRow}>
+              <Text style={styles.streamingLabel}>Dec</Text>
+              <View style={styles.decoderButtons}>
+                {DECODER_OPTIONS.map(([value, label]) => (
+                  <TouchableOpacity
+                    key={value}
+                    style={[styles.decoderBtn, webmDecoder === value && styles.modeBtnActive]}
+                    onPress={() => setWebmDecoder(value)}
+                  >
+                    <Text style={[styles.modeBtnText, webmDecoder === value && styles.modeBtnTextActive]}>{label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+          {Platform.OS === 'ios' && (
+            <View style={styles.streamingRow}>
+              <Text style={styles.streamingLabel}>Dec</Text>
+              <View style={[styles.modeBtn, styles.modeBtnActive]}>
+                <Text style={[styles.modeBtnText, styles.modeBtnTextActive]}>ffmpeg</Text>
+              </View>
+            </View>
+          )}
+          <View style={styles.streamingRow}>
+            <Text style={styles.streamingLabel}>DecodeQ</Text>
+            <Switch
+              value={useDecodeQueue}
+              onValueChange={setUseDecodeQueue}
+              trackColor={{ false: '#555', true: '#4a9' }}
+              thumbColor={useDecodeQueue ? '#fff' : '#888'}
+            />
+          </View>
+          <View style={styles.streamingRow}>
+            <Text style={styles.streamingLabel}>Cache: {streamCacheSize}</Text>
+            <View style={styles.arrowButtons}>
+              <TouchableOpacity
+                style={styles.arrowBtn}
+                onPress={() => setStreamCacheSize(v => Math.max(1, v - 1))}
+              >
+                <Text style={styles.arrowText}>−</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.arrowBtn}
+                onPress={() => setStreamCacheSize(v => Math.min(200, v + 1))}
+              >
+                <Text style={styles.arrowText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.streamingRow}>
+            <Text style={styles.streamingLabel}>Prefetch: {streamPrefetchAhead}</Text>
+            <View style={styles.arrowButtons}>
+              <TouchableOpacity
+                style={styles.arrowBtn}
+                onPress={() => setStreamPrefetchAhead(v => Math.max(1, v - 1))}
+              >
+                <Text style={styles.arrowText}>−</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.arrowBtn}
+                onPress={() => setStreamPrefetchAhead(v => Math.min(60, v + 1))}
+              >
+                <Text style={styles.arrowText}>+</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-        <View style={styles.streamingRow}>
-          <Text style={styles.streamingLabel}>DecodeQ</Text>
-          <Switch
-            value={useDecodeQueue}
-            onValueChange={setUseDecodeQueue}
-            trackColor={{ false: '#555', true: '#4a9' }}
-            thumbColor={useDecodeQueue ? '#fff' : '#888'}
-          />
-        </View>
-        <View style={styles.streamingRow}>
-          <Text style={styles.streamingLabel}>Cache: {streamCacheSize}</Text>
-          <View style={styles.arrowButtons}>
-            <TouchableOpacity
-              style={styles.arrowBtn}
-              onPress={() => setStreamCacheSize(v => Math.max(1, v - 1))}
-            >
-              <Text style={styles.arrowText}>−</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.arrowBtn}
-              onPress={() => setStreamCacheSize(v => Math.min(200, v + 1))}
-            >
-              <Text style={styles.arrowText}>+</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        <View style={styles.streamingRow}>
-          <Text style={styles.streamingLabel}>Prefetch: {streamPrefetchAhead}</Text>
-          <View style={styles.arrowButtons}>
-            <TouchableOpacity
-              style={styles.arrowBtn}
-              onPress={() => setStreamPrefetchAhead(v => Math.max(1, v - 1))}
-            >
-              <Text style={styles.arrowText}>−</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.arrowBtn}
-              onPress={() => setStreamPrefetchAhead(v => Math.min(60, v + 1))}
-            >
-              <Text style={styles.arrowText}>+</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>}
 
-      {/* KTX2/ASTC Settings Panel */}
-      {showSettings && <View style={[styles.streamingPanel, { top: insets.top + 220 }]}>
-        <Text style={styles.streamingTitle}>KTX2/ASTC</Text>
-        <View style={styles.streamingRow}>
-          <Text style={styles.streamingLabel}>Stream</Text>
-          <Switch
-            value={ktx2StreamEnabled}
-            onValueChange={setKtx2StreamEnabled}
-            trackColor={{ false: '#555', true: '#4a9' }}
-            thumbColor={ktx2StreamEnabled ? '#fff' : '#888'}
-          />
+        {/* KTX2/ASTC Settings Panel */}
+        <View style={styles.streamingPanel}>
+          <Text style={styles.streamingTitle}>KTX2/ASTC</Text>
+          <View style={styles.streamingRow}>
+            <Text style={styles.streamingLabel}>Stream</Text>
+            <Switch
+              value={ktx2StreamEnabled}
+              onValueChange={setKtx2StreamEnabled}
+              trackColor={{ false: '#555', true: '#4a9' }}
+              thumbColor={ktx2StreamEnabled ? '#fff' : '#888'}
+            />
+          </View>
         </View>
-      </View>}
 
-      {/* KTX2 ZST Streaming Settings Panel */}
-      {showSettings && <View style={[styles.streamingPanel, { top: insets.top + 290 }]}>
-        <Text style={styles.streamingTitle}>KTX2 ZST</Text>
-        <View style={styles.streamingRow}>
-          <Text style={styles.streamingLabel}>{ktx2MemoryStrategy.toUpperCase()}</Text>
-          <Switch
-            value={ktx2MemoryStrategy === 'vram'}
-            onValueChange={(v) => setKtx2MemoryStrategy(v ? 'vram' : 'ram')}
-            trackColor={{ false: '#555', true: '#4a9' }}
-            thumbColor={ktx2MemoryStrategy === 'vram' ? '#fff' : '#888'}
-          />
-        </View>
-        <View style={styles.streamingRow}>
-          <Text style={styles.streamingLabel}>Ring: {ktx2RingSize}</Text>
-          <View style={styles.arrowButtons}>
-            <TouchableOpacity
-              style={styles.arrowBtn}
-              onPress={() => setKtx2RingSize(v => Math.max(4, v - 2))}
-            >
-              <Text style={styles.arrowText}>−</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.arrowBtn}
-              onPress={() => setKtx2RingSize(v => Math.min(32, v + 2))}
-            >
-              <Text style={styles.arrowText}>+</Text>
-            </TouchableOpacity>
+        {/* KTX2 ZST Streaming Settings Panel */}
+        <View style={styles.streamingPanel}>
+          <Text style={styles.streamingTitle}>KTX2 ZST</Text>
+          <View style={styles.streamingRow}>
+            <Text style={styles.streamingLabel}>{ktx2MemoryStrategy.toUpperCase()}</Text>
+            <Switch
+              value={ktx2MemoryStrategy === 'vram'}
+              onValueChange={(v) => setKtx2MemoryStrategy(v ? 'vram' : 'ram')}
+              trackColor={{ false: '#555', true: '#4a9' }}
+              thumbColor={ktx2MemoryStrategy === 'vram' ? '#fff' : '#888'}
+            />
           </View>
-        </View>
-        <View style={styles.streamingRow}>
-          <Text style={styles.streamingLabel}>Cache: {ktx2CacheSize}</Text>
-          <View style={styles.arrowButtons}>
-            <TouchableOpacity
-              style={styles.arrowBtn}
-              onPress={() => setKtx2CacheSize(v => Math.max(10, v - 5))}
-            >
-              <Text style={styles.arrowText}>−</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.arrowBtn}
-              onPress={() => setKtx2CacheSize(v => Math.min(120, v + 5))}
-            >
-              <Text style={styles.arrowText}>+</Text>
-            </TouchableOpacity>
+          <View style={styles.streamingRow}>
+            <Text style={styles.streamingLabel}>Ring: {ktx2RingSize}</Text>
+            <View style={styles.arrowButtons}>
+              <TouchableOpacity
+                style={styles.arrowBtn}
+                onPress={() => setKtx2RingSize(v => Math.max(4, v - 2))}
+              >
+                <Text style={styles.arrowText}>−</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.arrowBtn}
+                onPress={() => setKtx2RingSize(v => Math.min(32, v + 2))}
+              >
+                <Text style={styles.arrowText}>+</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-        <View style={styles.streamingRow}>
-          <Text style={styles.streamingLabel}>Prefetch: {ktx2PrefetchAhead}</Text>
-          <View style={styles.arrowButtons}>
-            <TouchableOpacity
-              style={styles.arrowBtn}
-              onPress={() => setKtx2PrefetchAhead(v => Math.max(5, v - 5))}
-            >
-              <Text style={styles.arrowText}>−</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.arrowBtn}
-              onPress={() => setKtx2PrefetchAhead(v => Math.min(60, v + 5))}
-            >
-              <Text style={styles.arrowText}>+</Text>
-            </TouchableOpacity>
+          <View style={styles.streamingRow}>
+            <Text style={styles.streamingLabel}>Cache: {ktx2CacheSize}</Text>
+            <View style={styles.arrowButtons}>
+              <TouchableOpacity
+                style={styles.arrowBtn}
+                onPress={() => setKtx2CacheSize(v => Math.max(10, v - 5))}
+              >
+                <Text style={styles.arrowText}>−</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.arrowBtn}
+                onPress={() => setKtx2CacheSize(v => Math.min(120, v + 5))}
+              >
+                <Text style={styles.arrowText}>+</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </View>}
-
-      {/* WebM FFmpegKit Settings Panel */}
-      {showSettings && <View style={[styles.streamingPanel, { top: insets.top + 440 }]}>
-        <Text style={styles.streamingTitle}>WebM FFmpegKit</Text>
-        <View style={styles.streamingRow}>
-          <Text style={styles.streamingLabel}>Stream</Text>
-          <Switch
-            value={webmKitStream}
-            onValueChange={setWebmKitStream}
-            trackColor={{ false: '#555', true: '#4a9' }}
-            thumbColor={webmKitStream ? '#fff' : '#888'}
-          />
+          <View style={styles.streamingRow}>
+            <Text style={styles.streamingLabel}>Prefetch: {ktx2PrefetchAhead}</Text>
+            <View style={styles.arrowButtons}>
+              <TouchableOpacity
+                style={styles.arrowBtn}
+                onPress={() => setKtx2PrefetchAhead(v => Math.max(5, v - 5))}
+              >
+                <Text style={styles.arrowText}>−</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.arrowBtn}
+                onPress={() => setKtx2PrefetchAhead(v => Math.min(60, v + 5))}
+              >
+                <Text style={styles.arrowText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </View>}
 
@@ -693,13 +736,17 @@ const styles = StyleSheet.create({
       position: 'fixed',
     } : {}),
   },
-  streamingPanel: {
+  settingsColumn: {
     position: 'absolute',
     right: 8,
+    alignItems: 'flex-end',
+    zIndex: 1001,
+  },
+  streamingPanel: {
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
     borderRadius: 8,
     padding: 8,
-    zIndex: 1001,
+    marginBottom: 6,
   },
   streamingRow: {
     flexDirection: 'row',
@@ -748,6 +795,22 @@ const styles = StyleSheet.create({
   modeBtnActive: {
     backgroundColor: '#4a9',
   },
+  // Five buttons wrap onto two lines so the panel keeps the Mode row's width
+  decoderButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    flexShrink: 1,
+    maxWidth: 150,
+  },
+  decoderBtn: {
+    backgroundColor: '#555',
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    marginLeft: 4,
+    marginVertical: 2,
+    borderRadius: 4,
+  },
   modeBtnText: {
     color: '#aaa',
     fontSize: 11,
@@ -756,13 +819,17 @@ const styles = StyleSheet.create({
   modeBtnTextActive: {
     color: '#fff',
   },
-  assetSelector: {
+  settingsColumnLeft: {
     position: 'absolute',
     left: 8,
+    alignItems: 'flex-start',
+    zIndex: 1001,
+  },
+  assetSelector: {
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
     borderRadius: 8,
     padding: 8,
-    zIndex: 1001,
+    marginBottom: 6,
   },
   assetLabel: {
     color: '#aaa',
