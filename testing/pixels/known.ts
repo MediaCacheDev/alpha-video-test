@@ -6,13 +6,9 @@
  */
 export const KNOWN_ISSUES: { match: RegExp; reason: string; emulatorOnly?: boolean }[] = [
   {
-    match: /^android card_383x217\/dual_vp9(_p0)?\.webm cpp /,
+    match: /^android card_383x217\/dual_vp9_p0\.webm cpp /,
     reason: 'The emulator\'s MediaCodec VP9 decoder rejects 383x217 (BAD_VALUE), and AlphaVideoView has no software fallback for dual-stream files',
     emulatorOnly: true,
-  },
-  {
-    match: /^android card_\w+\/dual_vp9\.webm cpp /,
-    reason: 'MediaCodec garbles the profile 1 (gbrp) alpha stream',
   },
   {
     match: /^android card_1920x1080\/dual_av1\.webm cpp default$/,
