@@ -279,7 +279,7 @@ function runCase(device: Device, c: Case, caseIndex: number): CaseResult {
     }
   }
   const pass = results.length === (c.play ? 1 : frames.length) && results.every((r) => !r.error && r.failures.length === 0);
-  const knownIssue = knownIssueFor(`${device.platform} ${label(c)}`);
+  const knownIssue = knownIssueFor(`${device.platform} ${label(c)}`, device.emulator);
   const status = knownIssue ? (pass ? 'unexpected pass' : 'known') : pass ? 'pass' : 'fail';
   const name = (r: FrameResult) => (r.frame < 0 ? 'playback' : r.frame);
   const line = results.map((r) => (r.error ? `${name(r)}:ERR` : r.failures.length ? `${name(r)}:FAIL` : `${name(r)}:ok`)).join(' ');

@@ -21,6 +21,8 @@ export interface Screenshot {
 
 export interface Device {
   platform: 'android' | 'ios';
+  /** An Android emulator or the iOS Simulator, rather than real hardware. */
+  emulator: boolean;
   /** The folder the fixtures are copied to, as the app sees it. */
   root: string;
   /** Copies a file to `root/relPath`, unless the same size is already there. */
@@ -43,6 +45,7 @@ function android(): Device {
   }
   return {
     platform: 'android',
+    emulator: adb(['shell', 'getprop ro.kernel.qemu']).toString().trim() === '1',
     root,
     push(localPath, relPath) {
       if (sizes.get(relPath) === fs.statSync(localPath).size) return;
@@ -80,6 +83,7 @@ function ios(): Device {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5000);
   return {
     platform: 'ios',
+    emulator: true,
     root,
     push(localPath, relPath) {
       const target = path.join(root, relPath);
