@@ -5,7 +5,7 @@
  *   npm run test:pixels -- --platform android|ios [--only <regex>] [--frames 0,1,29,30,31,37,59]
  *                          [--playback] [--cards testing/build/testcard] [--out testing/build/pixels/<platform>]
  *
- * `--only` matches "<card>/<fixture> <player> <mode>", e.g. `--only "383x217/yuva.webm cpp"`.
+ * `--only` matches "<card>/<fixture> <player> <mode>[ <decoder>]", e.g. `--only "383x217/yuva.webm cpp"`.
  * `--playback` plays and loops each case instead, and checks the frame codes keep moving and wrap.
  * Needs the demo's release build installed and the emulator or simulator booted, and the cards
  * generated (npm run testcards). Writes report.json and report.html; exits 1 if any case fails.
@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import type { Layout } from '../testcard/layout.ts';
 import { probe, type PatchResult, type ProbeReport } from '../probe/probe.ts';
-import { isDualStream, streamCodec } from '../probe/decoders.ts';
+import { isDualStream, streamCodec, streamPixelFormat } from '../probe/decoders.ts';
 import { failures, tolerancesFor, type Measured, type Tolerances } from '../probe/tolerances.ts';
 import { run } from '../lib/run.ts';
 import { connect, type Device, type Screenshot } from './device.ts';
@@ -59,6 +59,8 @@ export interface Case {
   player: Player;
   /** Absent: the player's default (C++ preload, ffmpeg-kit stream, GPU player not streaming). */
   mode?: string;
+  /** The C++ player's `decoder`; absent: 'auto'. */
+  decoder?: string;
   play?: boolean;
 }
 
@@ -89,15 +91,30 @@ export interface CaseResult extends Case {
   status: 'pass' | 'fail' | 'known' | 'unexpected pass';
 }
 
-const label = (c: Case) => `${c.card}/${c.fixture} ${c.player} ${c.mode ?? 'default'}${c.play ? ' play' : ''}`;
+const label = (c: Case) =>
+  `${c.card}/${c.fixture} ${c.player} ${c.mode ?? 'default'}${c.decoder ? ` ${c.decoder}` : ''}${c.play ? ' play' : ''}`;
 
 function casesFor(card: string, fixture: string, file: string, platform: string): Case[] {
-  const as = (player: Player, mode?: string): Case => ({ card, fixture, player, mode, play: args.playback });
+  const as = (player: Player, mode?: string, decoder?: string): Case =>
+    ({ card, fixture, player, mode, decoder, play: args.playback });
   if (/\.ktx2$/.test(fixture)) return [as('gpu'), as('gpu', 'stream')];
-  // On Android dual-stream files play through MediaCodec, which ignores `mode`. Elsewhere the
-  // C++ core decodes them, VP9 only.
-  if (isDualStream(file) && platform === 'android') return [as('cpp')];
-  const cpp = streamCodec(file, 0) === 'vp9' ? [as('cpp'), as('cpp', 'stream')] : [];
+  const av1 = streamCodec(file, 0) === 'av1';
+  if (platform === 'android') {
+    // Every WebM card has colour and alpha as separate bitstreams (a YUVA file's alpha is in
+    // BlockAdditional), so MediaCodec can take them, ignoring `mode`. Each engine runs besides
+    // 'auto': FFmpeg has no AV1, no Android decoder lists VP9 profile 1 (a gbrp alpha track), and
+    // the test devices have no AV1 hardware decoder.
+    const mediaCodec = !isDualStream(file) || streamPixelFormat(file, 1) !== 'gbrp';
+    return [
+      as('cpp'),
+      ...(av1 ? [] : [as('cpp', undefined, 'ffmpeg'), as('cpp', 'stream', 'ffmpeg')]),
+      ...(mediaCodec && !av1 ? [as('cpp', undefined, 'mediacodec-hw')] : []),
+      ...(mediaCodec ? [as('cpp', undefined, 'mediacodec-sw')] : []),
+      ...(isDualStream(file) ? [] : [as('ffk-gpu'), as('ffk-gpu', 'preload'), as('ffk-cpu')]),
+    ];
+  }
+  // Elsewhere the C++ core decodes dual-stream files, VP9 only.
+  const cpp = av1 ? [] : [as('cpp'), as('cpp', 'stream')];
   if (isDualStream(file)) return cpp;
   return [...cpp, as('ffk-gpu'), as('ffk-gpu', 'preload'), as('ffk-cpu')];
 }
@@ -228,7 +245,8 @@ function watchPlayback(device: Device, c: Case, card: Layout, id: string, bg: Ba
 }
 
 function runCase(device: Device, c: Case, caseIndex: number): CaseResult {
-  const id = `${c.card}_${c.fixture}_${c.player}${c.mode ? `_${c.mode}` : ''}${c.play ? '_play' : ''}`.replace(/[^\w.-]+/g, '_');
+  const id = `${c.card}_${c.fixture}_${c.player}${c.mode ? `_${c.mode}` : ''}${c.decoder ? `_${c.decoder}` : ''}${c.play ? '_play' : ''}`
+    .replace(/[^\w.-]+/g, '_');
   const cardDir = path.join(args.cards!, c.card);
   const card: Layout = JSON.parse(fs.readFileSync(path.join(cardDir, 'layout.json'), 'utf8'));
   for (const rel of [c.fixture, ...frames.map(framePng)]) device.push(path.join(cardDir, rel), `${c.card}/${rel}`);

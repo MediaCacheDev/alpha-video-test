@@ -1,18 +1,28 @@
 /**
  * Cases that fail for a known reason. A listed case that fails is reported as known and doesn't
  * fail the run; one that passes does, so the entry gets removed. Each pattern matches
- * "<platform> <card>/<fixture> <player> <mode>", the mode being "default" when unset.
+ * "<platform> <card>/<fixture> <player> <mode>[ <decoder>]", the mode being "default" when unset.
  * `emulatorOnly` entries apply on an emulator or simulator, not on real hardware.
  */
 export const KNOWN_ISSUES: { match: RegExp; reason: string; emulatorOnly?: boolean }[] = [
   {
-    match: /^android card_383x217\/dual_vp9_p0\.webm cpp /,
-    reason: 'The emulator\'s MediaCodec VP9 decoder rejects 383x217 (BAD_VALUE), and AlphaVideoView has no software fallback for dual-stream files',
+    match: /^android card_383x217\/(dual_vp9_p0|yuva)\.webm cpp default( mediacodec-hw)?( play)?$/,
+    reason: 'The emulator\'s MediaCodec VP9 decoder rejects 383x217 (BAD_VALUE), and AlphaVideoView has no software fallback once MediaCodec is chosen',
     emulatorOnly: true,
   },
   {
-    match: /^android card_1920x1080\/dual_av1\.webm cpp default$/,
-    reason: 'Emulator: no GL_EXT_YUV_target, so the driver converts the software AV1 decoder\'s frames, as BT.601 whatever their colour tags',
+    match: /^android card_1920x1080\/yuva\.webm cpp default( mediacodec-hw)?$/,
+    reason: 'Emulator: the goldfish VP9 decoder treats a 1080p alpha stream as limited range, though libvpx stores BlockAdditional alpha full range (256x256 is right)',
+    emulatorOnly: true,
+  },
+  {
+    match: /^android card_\d+x\d+\/yuva\.webm cpp default mediacodec-sw( play)?$/,
+    reason: 'Emulator: no GL_EXT_YUV_target, and the driver converts the software VP9 decoder\'s alpha 15 levels off, though the decoder reports it full range as asked (and BT.601 colours at 1080p)',
+    emulatorOnly: true,
+  },
+  {
+    match: /^android card_1920x1080\/(dual_av1\.webm cpp default|dual_(av1|vp9_p0)\.webm cpp default mediacodec-sw)$/,
+    reason: 'Emulator: no GL_EXT_YUV_target, so the driver converts the software decoders\' frames (AV1 has no other), as BT.601 whatever their colour tags',
     emulatorOnly: true,
   },
 ];

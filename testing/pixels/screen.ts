@@ -20,6 +20,8 @@ export interface PixelTestCase {
   bg: Background;
   /** The player's `mode` ('preload', 'stream', 'streamAndPreload'); the player's default when absent. */
   mode?: string;
+  /** The C++ player's `decoder` ('auto', 'ffmpeg', 'mediacodec-hw', ...); 'auto' when absent. */
+  decoder?: string;
   /** Play and loop from the start instead of showing `frame` paused. */
   play?: boolean;
 }
@@ -29,7 +31,7 @@ const HOST = 'alphavideotest://pixeltest';
 export function pixelTestUrl(c: PixelTestCase): string {
   const params: [string, string | number | undefined][] = [
     ['player', c.player], ['root', c.root], ['card', c.card], ['fixture', c.fixture],
-    ['frame', c.frame], ['bg', c.bg], ['mode', c.mode], ['play', c.play ? 1 : undefined],
+    ['frame', c.frame], ['bg', c.bg], ['mode', c.mode], ['decoder', c.decoder], ['play', c.play ? 1 : undefined],
   ];
   const query = params
     .filter(([, v]) => v !== undefined)
@@ -58,6 +60,7 @@ export function parsePixelTestUrl(url: string | null | undefined): PixelTestCase
     frame: Number(params.get('frame') ?? 0),
     bg: params.get('bg') === 'white' ? 'white' : 'black',
     mode: params.get('mode') || undefined,
+    decoder: params.get('decoder') || undefined,
     play: params.get('play') === '1',
   };
 }

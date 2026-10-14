@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Dimensions, Image, PixelRatio, StatusBar, StyleSheet, Text, View } from 'react-native';
-import { AlphaVideoView, type PlaybackMode } from 'react-native-alpha-video';
+import { AlphaVideoView, type Decoder, type PlaybackMode } from 'react-native-alpha-video';
 import { FFmpegKitAlphaCPUView, FFmpegKitAlphaGPUView } from 'react-native-alpha-video-ffmpegkit';
 import { AlphaVideoGpuView } from 'react-native-alpha-video-gpu';
 import {
@@ -29,7 +29,7 @@ export function PixelTestScreen({ testCase: c }: { testCase: PixelTestCase }) {
   const ratio = PixelRatio.get();
   const layout = screenLayout(cardSize(c.card), Math.round(Dimensions.get('window').width * ratio), ratio);
   const folder = `file://${c.root}/${c.card}`;
-  const playerKey = `${c.player}|${c.card}|${c.fixture}|${c.mode ?? ''}|${c.play ? 'play' : ''}`;
+  const playerKey = `${c.player}|${c.card}|${c.fixture}|${c.mode ?? ''}|${c.decoder ?? ''}|${c.play ? 'play' : ''}`;
 
   return (
     <View style={[styles.screen, { backgroundColor: c.bg }]}>
@@ -49,7 +49,7 @@ export function PixelTestScreen({ testCase: c }: { testCase: PixelTestCase }) {
         fadeDuration={0}
       />
       <Text style={styles.status}>
-        {c.player} {c.card}/{c.fixture} {c.mode ?? ''} {c.play ? 'playing' : `frame ${c.frame}`}: {status}
+        {c.player} {c.card}/{c.fixture} {c.mode ?? ''} {c.decoder ?? ''} {c.play ? 'playing' : `frame ${c.frame}`}: {status}
       </Text>
     </View>
   );
@@ -69,15 +69,15 @@ function TestPlayer({ testCase: c, uri, style, onStatus }: {
     if (loaded.current && !c.play) ref.current?.seekToFrame(c.frame);
   }, [c.frame, c.play]);
 
-  const onLoad = () => {
+  const onLoad = (decoder?: string) => {
     loaded.current = true;
     if (!c.play) ref.current?.seekToFrame(c.frame);
-    onStatus('loaded');
+    onStatus(decoder ? `loaded on ${decoder}` : 'loaded');
   };
   const onError = (error: string) => onStatus(`error: ${error}`);
   // A new source object could reload the clip, and every link re-renders the screen.
   const source = useMemo(() => ({ uri }), [uri]);
-  const common = { source, autoPlay: !!c.play, loop: !!c.play, style, onLoad };
+  const common = { source, autoPlay: !!c.play, loop: !!c.play, style, onLoad: () => onLoad() };
 
   switch (c.player) {
     case 'cpp':
@@ -86,6 +86,8 @@ function TestPlayer({ testCase: c, uri, style, onStatus }: {
           ref={ref as React.Ref<never>}
           {...common}
           mode={c.mode as PlaybackMode | undefined}
+          decoder={c.decoder as Decoder | undefined}
+          onLoad={(e) => onLoad(e.decoder)}
           onError={(e) => onError(e.error)}
         />
       );
