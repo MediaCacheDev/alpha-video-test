@@ -6,14 +6,14 @@ A React Native app (Android, iOS and web) that plays the same transparent video 
 
 | Button | Package | Format |
 |---|---|---|
-| **+ ASTC** | [alpha-video-gpu](https://github.com/danielkpl2/alpha-video-gpu) | KTX2 ASTC texture array, zstd-compressed, drawn without decoding |
-| **+ Raw** | [alpha-video-gpu](https://github.com/danielkpl2/alpha-video-gpu) | KTX2 ASTC texture array, uncompressed (read straight from the file) |
-| **+ WebM** (C++ FFmpeg) | [alpha-video](https://github.com/danielkpl2/alpha-video) | VP9 alpha WebM, or dual-stream VP9/AV1; MediaCodec in hardware on Android where it can |
-| **+ WebM** (FFmpegKit) | [alpha-video-ffmpegkit](https://github.com/danielkpl2/alpha-video-ffmpegkit) | VP9 alpha WebM, the first attempt, kept as a reference |
+| **+ ASTC** | [alpha-video-gpu](https://github.com/MediaCacheDev/alpha-video-gpu) | KTX2 ASTC texture array, zstd-compressed, drawn without decoding |
+| **+ Raw** | [alpha-video-gpu](https://github.com/MediaCacheDev/alpha-video-gpu) | KTX2 ASTC texture array, uncompressed (read straight from the file) |
+| **+ WebM** (C++ FFmpeg) | [alpha-video](https://github.com/MediaCacheDev/alpha-video) | VP9 alpha WebM, or dual-stream VP9/AV1; MediaCodec in hardware on Android where it can |
+| **+ WebM** (FFmpegKit) | [alpha-video-ffmpegkit](https://github.com/MediaCacheDev/alpha-video-ffmpegkit) | VP9 alpha WebM, the first attempt, kept as a reference |
 | **+ ExoPlayer** (Android) | in this app (`android/app/src/main/java/com/alphavideotest/exoplayer/`) | VP9 alpha WebM in an ExoPlayer-style view that demuxes and decodes with FFmpeg (ExoPlayer's demuxer drops the alpha); an experiment, not published |
-| **+ APNG**, **+ AVIF** | [react-native-apng-avif](https://github.com/danielkpl2/react-native-apng-avif) | Animated PNG and animated AVIF |
+| **+ APNG**, **+ AVIF** | [react-native-apng-avif](https://github.com/MediaCacheDev/react-native-apng-avif) | Animated PNG and animated AVIF |
 
-The KTX2 files are made with [alpha-video-gpu-encoder](https://github.com/danielkpl2/alpha-video-gpu-encoder). [alpha-video](https://github.com/danielkpl2/alpha-video#alpha-video-or-alpha-video-gpu) explains when to pick a codec and when ASTC.
+The KTX2 files are made with [alpha-video-gpu-encoder](https://github.com/MediaCacheDev/alpha-video-gpu-encoder). [alpha-video](https://github.com/MediaCacheDev/alpha-video#alpha-video-or-alpha-video-gpu) explains when to pick a codec and when ASTC.
 
 The settings panels choose the clip (a 400×400 glow or a 1080p manta, single-stream or dual-stream VP9/AV1), each player's mode (`preload` or `stream`), the C++ player's decoder on Android (`auto`, `mediacodec-hw`, `software`, ...) and the KTX2 streaming buffers. Each tile shows the decoder it ended up on.
 
