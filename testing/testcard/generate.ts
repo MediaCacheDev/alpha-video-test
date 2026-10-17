@@ -83,6 +83,8 @@ const KTX2_VARIANTS: { name: string; args: string[] }[] = [
   { name: 'astc6x6.ktx2', args: ['--astc-block', '6x6'] },
   { name: 'astc8x8.ktx2', args: ['--astc-block', '8x8'] },
   { name: 'astc4x4_stream.ktx2', args: ['--astc-block', '4x4', '--use-stream-encoder'] },
+  // Every 3-4 layers a seek point, so seeks restart the decoder at a zstd frame
+  { name: 'astc4x4_seek.ktx2', args: ['--astc-block', '4x4', '--seek-interval', '0.25'] },
 ];
 
 function encodeKTX2s(layout: Layout, dir: string, variants: typeof KTX2_VARIANTS): string[] {
