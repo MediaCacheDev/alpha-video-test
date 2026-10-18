@@ -1,12 +1,17 @@
 package com.alphavideotest
 
 import android.app.Application
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultHttpDataSource
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
 import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.alphavideotest.exoplayer.RNExoVp9AlphaPackage
+import dev.mediacache.alphavideo.AlphaVideoDataSources
+import dev.mediacache.alphavideo.media3.Media3AlphaVideoDataSource
 
 class MainApplication : Application(), ReactApplication {
 
@@ -23,8 +28,14 @@ class MainApplication : Application(), ReactApplication {
     )
   }
 
+  @OptIn(UnstableApi::class)
   override fun onCreate() {
     super.onCreate()
+    // The stream tests' data source (testing/streaming): Media3's HTTP stack, by its user agent
+    AlphaVideoDataSources.register(
+      "media3",
+      Media3AlphaVideoDataSource.factory(DefaultHttpDataSource.Factory().setUserAgent("AlphaVideoTest-Media3")),
+    )
     loadReactNative(this)
   }
 }

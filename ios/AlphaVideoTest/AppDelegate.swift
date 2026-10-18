@@ -30,6 +30,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     )
 
     watchPixelTestLinks()
+    AlphaVideoDataSources.register(TestDataSource(), name: "test")
     return true
   }
 
@@ -61,6 +62,38 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     RCTLinkingManager.application(app, open: url, options: options)
   }
 }
+
+/// The stream tests' data source (testing/streaming): reads each window with a URLSession range
+/// request, as an app's own source would, marked by its user agent.
+final class TestDataSource: NSObject, AlphaVideoDataSource {
+  func read(
+    url: URL, offset: Int64, length: Int64, headers: [String: String],
+    response: @escaping (AlphaVideoDataInfo) -> Void,
+    data: @escaping (Data) -> Void,
+    completion: @escaping (Error?) -> Void
+  ) -> AlphaVideoCancellable {
+    var request = URLRequest(url: url)
+    headers.forEach { request.setValue($1, forHTTPHeaderField: $0) }
+    request.setValue("bytes=\(offset)-\(offset + length - 1)", forHTTPHeaderField: "Range")
+    request.setValue("AlphaVideoTest-DataSource", forHTTPHeaderField: "User-Agent")
+    let task = URLSession.shared.dataTask(with: request) { body, urlResponse, error in
+      if let error { return completion(error) }
+      guard let http = urlResponse as? HTTPURLResponse, http.statusCode == 206 || http.statusCode == 416,
+            let total = http.value(forHTTPHeaderField: "Content-Range")?.split(separator: "/").last.flatMap({ Int64($0) })
+      else { return completion(URLError(.badServerResponse)) }
+      response(AlphaVideoDataInfo(
+        size: total,
+        etag: http.value(forHTTPHeaderField: "ETag"),
+        lastModified: http.value(forHTTPHeaderField: "Last-Modified")))
+      if http.statusCode == 206, let body, !body.isEmpty { data(body) }
+      completion(nil)
+    }
+    task.resume()
+    return task
+  }
+}
+
+extension URLSessionTask: AlphaVideoCancellable {}
 
 class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
   override func sourceURL(for bridge: RCTBridge) -> URL? {

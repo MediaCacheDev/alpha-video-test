@@ -57,3 +57,11 @@ npm run test:pixels -- --platform android --playback   # play and loop each case
 ```
 
 `test:pixels` needs the release build installed on a booted emulator or simulator. It copies the fixtures over, opens `alphavideotest://pixeltest?…` links (on iOS, by writing them to the app's `Documents/pixeltest/link.txt`), captures each frame over black and over white, and writes `testing/build/pixels/<platform>/report.html`. With `--playback` it reads the frame code from screenshots while each case loops, and fails on a stall, a step backwards or no loop. Cases listed in `testing/pixels/known.ts` fail for known reasons and don't fail the run.
+
+## Streaming tests
+
+```sh
+npm run test:streaming -- --platform android   # or ios; --only <regex>
+```
+
+`test:streaming` plays 10 s clips made with ffmpeg (`testing/build/streaming`) in `react-native-alpha-video` from local servers (alpha-video-source's `range-server.mjs`, a sibling checkout), through `alphavideotest://streamtest?…` links; the screen reports its events back over HTTP (`adb reverse` on Android). It checks range requests and a seek that jumps to the Cues, a server without range support, preload in one request, replay from the disk store (also after restarting the app) and the memory store with no requests, `source.headers`, and an app data source: Media3's `DefaultHttpDataSource` through `alpha-video-media3` on Android (compiled from the player repo's `android/media3`), and the URLSession one in `AppDelegate.swift` on iOS. Like the pixel tests it needs the release build installed; the Android release build allows cleartext HTTP to `127.0.0.1` only.

@@ -28,6 +28,8 @@ export interface Device {
   /** Copies a file to `root/relPath`, unless the same size is already there. */
   push(localPath: string, relPath: string): void;
   open(url: string): void;
+  /** Stops the app; the next `open` starts it again. */
+  restart(): void;
   screenshot(): Screenshot;
 }
 
@@ -57,6 +59,9 @@ function android(): Device {
     open(url) {
       adb(['shell', `am start -W -a android.intent.action.VIEW -d '${url}' ${ANDROID_PACKAGE}`]);
     },
+    restart() {
+      adb(['shell', `am force-stop ${ANDROID_PACKAGE}`]);
+    },
     screenshot() {
       // Raw screencap: a 16-byte header (width, height, format, colour space), then RGBA_8888.
       // gzip makes the transfer six times faster than the raw or PNG forms.
@@ -77,10 +82,13 @@ function ios(): Device {
   // The app watches root/link.txt for links (see AppDelegate.swift), but only if root exists at
   // launch, and the first link is lost if JavaScript isn't listening yet.
   fs.mkdirSync(root, { recursive: true });
-  fs.rmSync(path.join(root, 'link.txt'), { force: true });
-  spawnSync('xcrun', ['simctl', 'terminate', udid, IOS_BUNDLE_ID]);
-  simctl(['launch', udid, IOS_BUNDLE_ID]);
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5000);
+  const launch = () => {
+    fs.rmSync(path.join(root, 'link.txt'), { force: true });
+    spawnSync('xcrun', ['simctl', 'terminate', udid, IOS_BUNDLE_ID]);
+    simctl(['launch', udid, IOS_BUNDLE_ID]);
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5000);
+  };
+  launch();
   return {
     platform: 'ios',
     emulator: true,
@@ -95,6 +103,7 @@ function ios(): Device {
       fs.writeFileSync(path.join(root, 'link.tmp'), url);
       fs.renameSync(path.join(root, 'link.tmp'), path.join(root, 'link.txt'));
     },
+    restart: launch,
     screenshot() {
       simctl(['io', udid, 'screenshot', '--type=png', shotPath]);
       const png = fs.readFileSync(shotPath);

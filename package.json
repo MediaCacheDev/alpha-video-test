@@ -12,6 +12,7 @@
     "testcards": "node testing/testcard/generate.ts",
     "testcards:reference": "tsc -p testing && node testing/reference.ts",
     "test:pixels": "tsc -p testing && node testing/pixels/run.ts",
+    "test:streaming": "tsc -p testing && node testing/streaming/run.ts",
     "web": "webpack serve --mode development --config webpack.config.js",
     "build:web": "webpack --mode production --config webpack.config.js"
   },
