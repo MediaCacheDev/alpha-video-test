@@ -11,6 +11,8 @@ import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.alphavideotest.exoplayer.RNExoVp9AlphaPackage
 import dev.mediacache.alphavideo.AlphaVideoDataSources
+import dev.mediacache.alphavideo.gpu.AlphaVideoGpuDataSources
+import dev.mediacache.alphavideo.gpu.media3.Media3AlphaVideoGpuDataSource
 import dev.mediacache.alphavideo.media3.Media3AlphaVideoDataSource
 
 class MainApplication : Application(), ReactApplication {
@@ -31,11 +33,10 @@ class MainApplication : Application(), ReactApplication {
   @OptIn(UnstableApi::class)
   override fun onCreate() {
     super.onCreate()
-    // The stream tests' data source (testing/streaming): Media3's HTTP stack, by its user agent
-    AlphaVideoDataSources.register(
-      "media3",
-      Media3AlphaVideoDataSource.factory(DefaultHttpDataSource.Factory().setUserAgent("AlphaVideoTest-Media3")),
-    )
+    // The stream tests' data sources (testing/streaming): Media3's HTTP stack, by its user agent
+    val media3 = DefaultHttpDataSource.Factory().setUserAgent("AlphaVideoTest-Media3")
+    AlphaVideoDataSources.register("media3", Media3AlphaVideoDataSource.factory(media3))
+    AlphaVideoGpuDataSources.register("media3", Media3AlphaVideoGpuDataSource.factory(media3))
     loadReactNative(this)
   }
 }

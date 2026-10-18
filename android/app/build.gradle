@@ -105,9 +105,10 @@ android {
             jniLibs.srcDirs = ['src/main/jniLibs']
             // The demo media, read in place as asset://media/...
             assets.srcDirs += ['../../assets']
-            // alpha-video-media3 from the player repo, for the stream tests' Media3 data source;
-            // the npm package doesn't carry it
-            java.srcDirs += ['../../../webmvp9alphaplayer/react-native-webm-alpha-player/android/media3/src/main/java']
+            // alpha-video-media3 and alpha-video-gpu-media3 from the player repos, for the stream
+            // tests' Media3 data sources; the npm packages don't carry them
+            java.srcDirs += ['../../../webmvp9alphaplayer/react-native-webm-alpha-player/android/media3/src/main/java',
+                             '../../../ktx2player/android/media3/src/main/java']
         }
     }
 

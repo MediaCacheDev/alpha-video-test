@@ -1,16 +1,21 @@
 /**
- * The demo's stream-test link (alphavideotest://streamtest?c=<json>): it shows one AlphaVideoView
- * with these props and reports its events to the driver (testing/streaming/run.ts).
+ * The demo's stream-test link (alphavideotest://streamtest?c=<json>): it shows one AlphaVideoView,
+ * or with `player: 'ktx2'` one AlphaVideoGpuView, with these props and reports its events to the
+ * driver (testing/streaming/run.ts).
  */
 const HOST = 'alphavideotest://streamtest';
 
 export interface StreamTestCase {
   id: string;
+  /** Default 'webm' (react-native-alpha-video); 'ktx2' is react-native-alpha-video-gpu. */
+  player?: 'webm' | 'ktx2';
   uri: string;
   /** The driver's event server: the screen requests `<report>/event?id=…&event=…&detail=…`. */
   report: string;
   storage?: 'auto' | 'disk' | 'memory' | 'none';
+  /** WebM only */
   mode?: 'stream' | 'preload' | 'streamAndPreload';
+  /** WebM only */
   decoder?: string;
   cacheKey?: string;
   headers?: Record<string, string>;

@@ -1,12 +1,13 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { StatusBar, StyleSheet, Text, View } from 'react-native';
 import { AlphaVideoView, type AlphaVideoViewRef, type Decoder } from 'react-native-alpha-video';
+import { AlphaVideoGpuView, type AlphaVideoGpuViewRef } from 'react-native-alpha-video-gpu';
 import type { StreamTestCase } from '../../testing/streaming/link';
 
 /** One player on a source, reporting load, seek, end and errors to the stream-test driver. */
 export function StreamTestScreen({ testCase: c }: { testCase: StreamTestCase }) {
   const [status, setStatus] = useState('loading');
-  const ref = useRef<AlphaVideoViewRef>(null);
+  const ref = useRef<AlphaVideoViewRef & AlphaVideoGpuViewRef>(null);
   const report = (event: string, detail = '') => {
     setStatus(detail ? `${event}: ${detail}` : event);
     const query = `id=${encodeURIComponent(c.id)}&event=${event}&detail=${encodeURIComponent(detail)}`;
@@ -17,8 +18,8 @@ export function StreamTestScreen({ testCase: c }: { testCase: StreamTestCase }) 
     [c.uri, c.headers, c.dataSource],
   );
 
-  const onLoad = (decoder: string) => {
-    report('load', decoder);
+  const onLoad = (detail: string) => {
+    report('load', detail);
     const seekTo = c.seekTo;
     if (seekTo == null) return;
     setTimeout(() => {
@@ -30,20 +31,35 @@ export function StreamTestScreen({ testCase: c }: { testCase: StreamTestCase }) 
   return (
     <View style={styles.screen}>
       <StatusBar hidden />
-      <AlphaVideoView
-        key={c.id}
-        ref={ref}
-        source={source}
-        cacheKey={c.cacheKey}
-        storage={c.storage}
-        mode={c.mode}
-        decoder={c.decoder as Decoder | undefined}
-        loop={c.loop ?? true}
-        style={styles.player}
-        onLoad={(e) => onLoad(e.decoder)}
-        onError={(e) => report('error', e.error)}
-        onEnd={() => report('end')}
-      />
+      {c.player === 'ktx2' ? (
+        <AlphaVideoGpuView
+          key={c.id}
+          ref={ref}
+          source={source}
+          cacheKey={c.cacheKey}
+          storage={c.storage}
+          loop={c.loop ?? true}
+          style={styles.player}
+          onLoad={(e) => onLoad(`${e.nativeEvent.frameCount} frames`)}
+          onError={(e) => report('error', e.nativeEvent.error)}
+          onFinished={() => report('end')}
+        />
+      ) : (
+        <AlphaVideoView
+          key={c.id}
+          ref={ref}
+          source={source}
+          cacheKey={c.cacheKey}
+          storage={c.storage}
+          mode={c.mode}
+          decoder={c.decoder as Decoder | undefined}
+          loop={c.loop ?? true}
+          style={styles.player}
+          onLoad={(e) => onLoad(e.decoder)}
+          onError={(e) => report('error', e.error)}
+          onEnd={() => report('end')}
+        />
+      )}
       <Text style={styles.status}>
         {c.id}: {status}
       </Text>
