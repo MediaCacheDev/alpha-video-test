@@ -27,8 +27,9 @@ export const KNOWN_ISSUES: { match: RegExp; reason: string; emulatorOnly?: boole
     emulatorOnly: true,
   },
   {
-    match: /^android card_\d+x\d+\/dual_av1_10bit\.webm cpp /,
-    reason: 'Emulator on Apple silicon: its CPU features list sve2, which the host can\'t run, so dav1d\'s 10-bit put_8tap_sve2 dies with SIGILL, in Android\'s c2.android.av1-dav1d as in the C++ core',
+    // 'auto' and 'mediacodec-sw'; the C++ core's dav1d masks SVE when the CPU lists SVE2 alone
+    match: /^android card_\d+x\d+\/dual_av1_10bit\.webm cpp \S+( mediacodec-sw)?$/,
+    reason: 'Emulator on Apple silicon: its CPU features list sve2, which the host can\'t run, so dav1d\'s 10-bit put_8tap_sve2 dies with SIGILL in Android\'s c2.android.av1-dav1d',
     emulatorOnly: true,
   },
 ];

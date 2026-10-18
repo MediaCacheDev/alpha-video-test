@@ -74,7 +74,11 @@ function TestPlayer({ testCase: c, uri, style, onStatus }: {
     if (!c.play) ref.current?.seekToFrame(c.frame);
     onStatus(decoder ? `loaded on ${decoder}` : 'loaded');
   };
-  const onError = (error: string) => onStatus(`error: ${error}`);
+  // Logged too, for the driver: a build without a codec expects NO_DECODER (testing/pixels/run.ts)
+  const onError = (error: string, code?: string) => {
+    console.warn(`pixeltest error ${code ?? '-'}: ${error}`);
+    onStatus(`error: ${error}`);
+  };
   // A new source object could reload the clip, and every link re-renders the screen.
   const source = useMemo(() => ({ uri }), [uri]);
   const common = { source, autoPlay: !!c.play, loop: !!c.play, style, onLoad: () => onLoad() };
@@ -89,7 +93,7 @@ function TestPlayer({ testCase: c, uri, style, onStatus }: {
           decoder={c.decoder as Decoder | undefined}
           verbose={c.verbose}
           onLoad={(e) => onLoad(e.decoder)}
-          onError={(e) => onError(e.error)}
+          onError={(e) => onError(e.error, e.code)}
         />
       );
     case 'ffk-gpu':

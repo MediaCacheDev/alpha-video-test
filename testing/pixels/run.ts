@@ -3,10 +3,13 @@
  * captures each over black and over white, and measures it with the probe.
  *
  *   npm run test:pixels -- --platform android|ios [--only <regex>] [--frames 0,1,29,30,31,37,59]
- *                          [--playback] [--cards testing/build/testcard] [--out testing/build/pixels/<platform>]
+ *                          [--playback] [--codecs vpx,av1] [--cards testing/build/testcard]
+ *                          [--out testing/build/pixels/<platform>]
  *
  * `--only` matches "<card>/<fixture> <player> <mode>[ <decoder>][ <memoryStrategy>]", e.g. `--only "383x217/yuva.webm cpp"`.
  * `--playback` plays and loops each case instead, and checks the frame codes keep moving and wrap.
+ * `--codecs` is the build's `"react-native-alpha-video": { "codecs" }` (none: `--codecs ''`). A case
+ * the C++ core would decode without its codec must report NO_DECODER, naming the module.
  * Needs the demo's release build installed and the emulator or simulator booted, and the cards
  * generated (npm run testcards). Writes report.json and report.html; exits 1 if any case fails.
  */
@@ -32,6 +35,7 @@ const { values: args } = parseArgs({
     only: { type: 'string' },
     frames: { type: 'string', default: '0,1,29,30,31,37,59' },
     playback: { type: 'boolean', default: false },
+    codecs: { type: 'string', default: 'vpx,av1' },
     cards: { type: 'string', default: path.join(demoRoot, 'testing/build/testcard') },
     out: { type: 'string' },
   },
@@ -39,6 +43,7 @@ const { values: args } = parseArgs({
 if (!args.platform) throw new Error('--platform android|ios is required');
 const outDir = path.resolve(args.out ?? path.join(demoRoot, 'testing/build/pixels', args.platform));
 const frames = args.frames!.split(',').map(Number);
+const codecs = args.codecs!.split(',').filter(Boolean);
 
 /** Time for a player to load and show its first frame; the 1080p preloads decode every frame first. */
 const LOAD_TIMEOUT_MS = 30_000;
@@ -64,6 +69,8 @@ export interface Case {
   /** The GPU player's `memoryStrategy`; absent: 'vram'. */
   memoryStrategy?: string;
   play?: boolean;
+  /** The codec module the C++ core needs for this case and the build lacks: the case expects NO_DECODER. */
+  missingCodec?: string;
 }
 
 export interface FrameResult {
@@ -98,16 +105,24 @@ const label = (c: Case) =>
   `${c.memoryStrategy ? ` ${c.memoryStrategy}` : ''}${c.play ? ' play' : ''}`;
 
 function casesFor(card: string, fixture: string, file: string, platform: string): Case[] {
-  const as = (player: Player, mode?: string, decoder?: string, memoryStrategy?: string): Case =>
-    ({ card, fixture, player, mode, decoder, memoryStrategy, play: args.playback });
-  if (/\.ktx2$/.test(fixture)) return [as('gpu'), as('gpu', 'stream', undefined, 'ram'), as('gpu', 'preload')];
+  if (/\.ktx2$/.test(fixture)) {
+    const gpu = (mode?: string, memoryStrategy?: string): Case =>
+      ({ card, fixture, player: 'gpu', mode, memoryStrategy, play: args.playback });
+    return [gpu(), gpu('stream', 'ram'), gpu('preload')];
+  }
   const av1 = streamCodec(file, 0) === 'av1';
+  // Every WebM card has colour and alpha as separate bitstreams (a YUVA file's alpha is in
+  // BlockAdditional), so Android's MediaCodec can take them, ignoring `mode`, except a gbrp alpha
+  // track: no Android decoder lists VP9 profile 1.
+  const mediaCodec = !isDualStream(file) || streamPixelFormat(file, 1) !== 'gbrp';
+  const codec = av1 ? 'av1' : 'vpx';
+  const as = (player: Player, mode?: string, decoder?: string, memoryStrategy?: string): Case => {
+    const onCore = player === 'cpp' && (platform === 'ios' || decoder === 'software' || (!decoder && !mediaCodec));
+    const missingCodec = onCore && !codecs.includes(codec) ? codec : undefined;
+    return { card, fixture, player, mode, decoder, memoryStrategy, play: args.playback, missingCodec };
+  };
   if (platform === 'android') {
-    // Every WebM card has colour and alpha as separate bitstreams (a YUVA file's alpha is in
-    // BlockAdditional), so MediaCodec can take them, ignoring `mode`. Each engine runs besides
-    // 'auto': no Android decoder lists VP9 profile 1 (a gbrp alpha track), and the test devices
-    // have no AV1 hardware decoder.
-    const mediaCodec = !isDualStream(file) || streamPixelFormat(file, 1) !== 'gbrp';
+    // Each engine runs besides 'auto'. The test devices have no AV1 hardware decoder.
     return [
       as('cpp'),
       as('cpp', undefined, 'software'),
@@ -248,6 +263,27 @@ function watchPlayback(device: Device, c: Case, card: Layout, id: string, bg: Ba
   return result;
 }
 
+/** Opens the case and waits for the player's NO_DECODER error naming the missing module. */
+function expectNoDecoder(device: Device, c: Case, bg: Background): FrameResult {
+  const result: FrameResult = { frame: -1, waitMs: 0, failures: [], controlFailures: [], images: [] };
+  device.consoleLog();
+  device.open(pixelTestUrl({ ...c, root: device.root, frame: 0, bg }));
+  const expected = `(the ${c.missingCodec} codec module)`;
+  const start = Date.now();
+  let errors: string[] = [];
+  while (Date.now() - start < LOAD_TIMEOUT_MS) {
+    errors.push(...device.consoleLog().split('\n').filter((line) => line.includes('pixeltest error')));
+    if (errors.length > 0) break;
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 250);
+  }
+  result.waitMs = Date.now() - start;
+  if (errors.length === 0) result.error = `no error in ${LOAD_TIMEOUT_MS / 1000} s, expected NO_DECODER ${expected}`;
+  else if (!errors.some((e) => e.includes('pixeltest error NO_DECODER:') && e.includes(expected))) {
+    result.failures.push(`expected NO_DECODER ${expected}, got: ${errors.join(' | ')}`);
+  }
+  return result;
+}
+
 function runCase(device: Device, c: Case, caseIndex: number): CaseResult {
   const id = `${c.card}_${c.fixture}_${c.player}${c.mode ? `_${c.mode}` : ''}${c.decoder ? `_${c.decoder}` : ''}${c.memoryStrategy ? `_${c.memoryStrategy}` : ''}${c.play ? '_play' : ''}`
     .replace(/[^\w.-]+/g, '_');
@@ -257,8 +293,10 @@ function runCase(device: Device, c: Case, caseIndex: number): CaseResult {
 
   const base = tolerancesFor(c.fixture);
   const results: FrameResult[] = [];
-  if (c.play) results.push(watchPlayback(device, c, card, id, caseIndex % 2 === 0 ? 'black' : 'white'));
-  for (const [i, frame] of (c.play ? [] : frames).entries()) {
+  const bg: Background = caseIndex % 2 === 0 ? 'black' : 'white';
+  if (c.missingCodec) results.push(expectNoDecoder(device, c, bg));
+  else if (c.play) results.push(watchPlayback(device, c, card, id, bg));
+  for (const [i, frame] of (c.play || c.missingCodec ? [] : frames).entries()) {
     // Alternate the order so each frame changes the background once, not twice.
     const order: Background[] = i % 2 === 0 ? ['black', 'white'] : ['white', 'black'];
     const shots: Partial<Record<Background, Shown>> = {};
@@ -300,10 +338,11 @@ function runCase(device: Device, c: Case, caseIndex: number): CaseResult {
       }
     }
   }
-  const pass = results.length === (c.play ? 1 : frames.length) && results.every((r) => !r.error && r.failures.length === 0);
-  const knownIssue = knownIssueFor(`${device.platform} ${label(c)}`, device.emulator);
+  const pass = results.length === (c.play || c.missingCodec ? 1 : frames.length) &&
+    results.every((r) => !r.error && r.failures.length === 0);
+  const knownIssue = c.missingCodec ? undefined : knownIssueFor(`${device.platform} ${label(c)}`, device.emulator);
   const status = knownIssue ? (pass ? 'unexpected pass' : 'known') : pass ? 'pass' : 'fail';
-  const name = (r: FrameResult) => (r.frame < 0 ? 'playback' : r.frame);
+  const name = (r: FrameResult) => (c.missingCodec ? 'NO_DECODER' : r.frame < 0 ? 'playback' : r.frame);
   const line = results.map((r) => (r.error ? `${name(r)}:ERR` : r.failures.length ? `${name(r)}:FAIL` : `${name(r)}:ok`)).join(' ');
   console.log(`${String(caseIndex + 1).padStart(3)} ${status.toUpperCase().padEnd(15)} ${label(c)}  ${line}`);
   if (knownIssue) console.log(`        known: ${knownIssue}`);

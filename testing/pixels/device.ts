@@ -31,6 +31,8 @@ export interface Device {
   /** Stops the app; the next `open` starts it again. */
   restart(): void;
   screenshot(): Screenshot;
+  /** The app's JavaScript console output since the last call, or since `connect`. */
+  consoleLog(): string;
 }
 
 function android(): Device {
@@ -45,6 +47,9 @@ function android(): Device {
     const m = /^(\d+) \.\/(.+)$/.exec(line.trim());
     if (m) sizes.set(m[2], Number(m[1]));
   }
+  adb(['logcat', '-c']);
+  // Not cleared after each read: a line logged between the read and the clear would be lost
+  let logSeenUntil = 0;
   return {
     platform: 'android',
     emulator: adb(['shell', 'getprop ro.kernel.qemu']).toString().trim() === '1',
@@ -70,6 +75,17 @@ function android(): Device {
       if (format !== 1) throw new Error(`screencap pixel format ${format}, expected 1 (RGBA_8888)`);
       return { width, height, data: raw.subarray(raw.length - width * height * 4) };
     },
+    consoleLog() {
+      const lines = adb(['logcat', '-d', '-v', 'epoch', '-s', 'ReactNativeJS:V']).toString().split('\n');
+      const fresh: string[] = [];
+      for (const line of lines) {
+        const time = parseFloat(line);
+        if (!(time > logSeenUntil)) continue;
+        fresh.push(line);
+        logSeenUntil = time;
+      }
+      return fresh.join('\n');
+    },
   };
 }
 
@@ -89,6 +105,7 @@ function ios(): Device {
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5000);
   };
   launch();
+  let logSince = new Date();
   return {
     platform: 'ios',
     emulator: true,
@@ -110,6 +127,15 @@ function ios(): Device {
       const width = png.readUInt32BE(16), height = png.readUInt32BE(20);
       const data = run('ffmpeg', ['-v', 'error', '-i', shotPath, '-f', 'rawvideo', '-pix_fmt', 'rgba', '-']);
       return { width, height, data };
+    },
+    consoleLog() {
+      const until = new Date();
+      // `log show` takes local times as "YYYY-MM-DD HH:MM:SS"
+      const local = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 19).replace('T', ' ');
+      const log = simctl(['spawn', udid, 'log', 'show', '--style', 'compact', '--start', local(logSince),
+        '--predicate', 'subsystem == "com.facebook.react.log" AND category == "javascript"']).toString();
+      logSince = until;
+      return log;
     },
   };
 }
