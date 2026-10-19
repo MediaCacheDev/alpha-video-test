@@ -9,8 +9,8 @@ import { spawnSync } from 'node:child_process';
 import { gunzipSync } from 'node:zlib';
 import { run } from '../lib/run.ts';
 
-const ANDROID_PACKAGE = 'com.alphavideotest';
-const IOS_BUNDLE_ID = 'org.reactjs.native.example.AlphaVideoTest';
+const ANDROID_PACKAGE = 'dev.mediacache.alphavideotest';
+const IOS_BUNDLE_ID = 'dev.mediacache.alphavideotest';
 
 export interface Screenshot {
   width: number;

@@ -1,4 +1,4 @@
-package com.alphavideotest
+package dev.mediacache.alphavideotest
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

@@ -1,4 +1,4 @@
-package com.alphavideotest;
+package dev.mediacache.alphavideotest.exoplayer;
 
 import androidx.annotation.NonNull;
 
@@ -11,18 +11,22 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class PerformanceMetricsPackage implements ReactPackage {
+/**
+ * React Native package for ExoPlayer-based VP9 Alpha player.
+ */
+public class RNExoVp9AlphaPackage implements ReactPackage {
+
     @NonNull
     @Override
     public List<NativeModule> createNativeModules(@NonNull ReactApplicationContext reactContext) {
-        List<NativeModule> modules = new ArrayList<>();
-        modules.add(new PerformanceMetricsModule(reactContext));
-        return modules;
+        return Collections.emptyList();
     }
 
     @NonNull
     @Override
     public List<ViewManager> createViewManagers(@NonNull ReactApplicationContext reactContext) {
-        return Collections.emptyList();
+        List<ViewManager> viewManagers = new ArrayList<>();
+        viewManagers.add(new RNExoVp9AlphaViewManager());
+        return viewManagers;
     }
 }

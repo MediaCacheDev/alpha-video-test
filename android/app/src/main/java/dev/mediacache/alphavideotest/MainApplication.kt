@@ -1,4 +1,4 @@
-package com.alphavideotest
+package dev.mediacache.alphavideotest
 
 import android.app.Application
 import androidx.annotation.OptIn
@@ -9,7 +9,7 @@ import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
 import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
-import com.alphavideotest.exoplayer.RNExoVp9AlphaPackage
+import dev.mediacache.alphavideotest.exoplayer.RNExoVp9AlphaPackage
 import dev.mediacache.alphavideo.AlphaVideoDataSources
 import dev.mediacache.alphavideo.gpu.AlphaVideoGpuDataSources
 import dev.mediacache.alphavideo.gpu.media3.Media3AlphaVideoGpuDataSource

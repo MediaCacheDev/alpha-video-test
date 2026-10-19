@@ -7,7 +7,7 @@
  *
  * The rendering uses OpenGL ES with a YUVA-to-RGBA shader for alpha compositing.
  */
-package com.alphavideotest.exoplayer;
+package dev.mediacache.alphavideotest.exoplayer;
 
 import android.content.Context;
 import android.graphics.SurfaceTexture;

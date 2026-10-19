@@ -33,7 +33,7 @@ extern "C" {
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 
 // JNI function name prefix - use indirection for proper macro expansion
-#define JNI_PREFIX Java_com_alphavideotest_exoplayer_ExoVp9AlphaTextureView_
+#define JNI_PREFIX Java_dev_mediacache_alphavideotest_exoplayer_ExoVp9AlphaTextureView_
 #define JNI_CONCAT_INNER(prefix, name) prefix##name
 #define JNI_CONCAT(prefix, name) JNI_CONCAT_INNER(prefix, name)
 #define JNI_FUNC(name) JNI_CONCAT(JNI_PREFIX, name)

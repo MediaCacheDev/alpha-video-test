@@ -1,4 +1,4 @@
-package com.alphavideotest.exoplayer;
+package dev.mediacache.alphavideotest.exoplayer;
 
 import android.util.Log;
 import android.view.View;

@@ -1,4 +1,4 @@
-package com.alphavideotest;
+package dev.mediacache.alphavideotest;
 
 import android.app.ActivityManager;
 import android.content.Context;
