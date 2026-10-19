@@ -3,13 +3,14 @@
  * plays clips from local servers through the demo's stream-test screen and checks what it
  * requested.
  *
- *   npm run test:streaming -- --platform android|ios [--only <regex>]
+ *   npm run test:streaming -- --platform android|ios [--player cpp|gpu] [--only <regex>]
  *
  * Covers range requests and a seek (to the Cues for WebM, to a seek point for KTX2), a server
  * without range support, replay from the disk store (also after a restart) and the memory store
  * with no requests, `source.headers`, and an app data source (Media3 on Android, a URLSession one
- * in AppDelegate.swift on iOS). KTX2 cases are named "ktx2 …". Needs the demo's release build
- * installed and the emulator or simulator booted. Exits 1 if any case fails.
+ * in AppDelegate.swift on iOS). `--player cpp` keeps the WebM cases (react-native-alpha-video),
+ * `--player gpu` the KTX2 ones (react-native-alpha-video-gpu, named "ktx2 …"). Needs the demo's
+ * release build installed and the emulator or simulator booted. Exits 1 if any case fails.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -31,9 +32,10 @@ type StartRangeServer = (options: Record<string, unknown>) => Promise<RangeServe
 
 const demoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const { values: args } = parseArgs({
-  options: { platform: { type: 'string' }, only: { type: 'string' } },
+  options: { platform: { type: 'string' }, player: { type: 'string' }, only: { type: 'string' } },
 });
 if (!args.platform) throw new Error('--platform android|ios is required');
+if (args.player && !['cpp', 'gpu'].includes(args.player)) throw new Error('--player is cpp or gpu');
 const only = args.only ? new RegExp(args.only) : null;
 
 const LOAD_TIMEOUT_MS = 20_000;
@@ -283,6 +285,7 @@ if (device.platform === 'android') {
 
 let failed = 0;
 for (const [name, test] of cases) {
+  if (args.player && (name.startsWith('ktx2 ') ? 'gpu' : 'cpp') !== args.player) continue;
   if (only && !only.test(name)) continue;
   try {
     console.log(`✓ ${name}: ${await test()}`);

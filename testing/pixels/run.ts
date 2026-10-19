@@ -2,10 +2,12 @@
  * Layer 2 pixel tests: shows frames of each fixture in the demo's pixel-test screen on a device,
  * captures each over black and over white, and measures it with the probe.
  *
- *   npm run test:pixels -- --platform android|ios [--only <regex>] [--frames 0,1,29,30,31,37,59]
- *                          [--playback] [--codecs vpx,av1] [--cards testing/build/testcard]
- *                          [--out testing/build/pixels/<platform>]
+ *   npm run test:pixels -- --platform android|ios [--player cpp,gpu,ffk-gpu,ffk-cpu] [--only <regex>]
+ *                          [--frames 0,1,29,30,31,37,59] [--playback] [--codecs vpx,av1]
+ *                          [--cards testing/build/testcard] [--out testing/build/pixels/<platform>]
  *
+ * `--player` keeps the cases of those players: cpp (alpha-video), gpu (alpha-video-gpu), ffk-gpu
+ * and ffk-cpu (alpha-video-ffmpegkit's two renderers).
  * `--only` matches "<card>/<fixture> <player> <mode>[ <decoder>][ <memoryStrategy>]", e.g. `--only "383x217/yuva.webm cpp"`.
  * `--playback` plays and loops each case instead, and checks the frame codes keep moving and wrap.
  * `--codecs` is the build's `"react-native-alpha-video": { "codecs" }` (none: `--codecs ''`). A case
@@ -32,6 +34,7 @@ const demoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../
 const { values: args } = parseArgs({
   options: {
     platform: { type: 'string' },
+    player: { type: 'string' },
     only: { type: 'string' },
     frames: { type: 'string', default: '0,1,29,30,31,37,59' },
     playback: { type: 'boolean', default: false },
@@ -146,8 +149,9 @@ function allCases(platform: string): Case[] {
     const fixtures: string[] = JSON.parse(fs.readFileSync(path.join(args.cards!, card, 'fixtures.json'), 'utf8'));
     for (const fixture of fixtures) cases.push(...casesFor(card, fixture, path.join(args.cards!, card, fixture), platform));
   }
+  const players = args.player?.split(',');
   const only = args.only ? new RegExp(args.only) : null;
-  return cases.filter((c) => !only || only.test(label(c)));
+  return cases.filter((c) => (!players || players.includes(c.player)) && (!only || only.test(label(c))));
 }
 
 function measured(r: ProbeReport, frame: number): Measured {
