@@ -70,7 +70,13 @@ function android(): Device {
     screenshot() {
       // Raw screencap: a 16-byte header (width, height, format, colour space), then RGBA_8888.
       // gzip makes the transfer six times faster than the raw or PNG forms.
-      const raw = gunzipSync(adb(['exec-out', 'screencap | gzip -1']));
+      // Samsung phones sometimes capture nothing while a window changes
+      let raw = gunzipSync(adb(['exec-out', 'screencap | gzip -1']));
+      for (let retry = 0; raw.length < 16 && retry < 5; retry++) {
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 200);
+        raw = gunzipSync(adb(['exec-out', 'screencap | gzip -1']));
+      }
+      if (raw.length < 16) throw new Error('screencap captured nothing');
       const width = raw.readUInt32LE(0), height = raw.readUInt32LE(4), format = raw.readUInt32LE(8);
       if (format !== 1) throw new Error(`screencap pixel format ${format}, expected 1 (RGBA_8888)`);
       return { width, height, data: raw.subarray(raw.length - width * height * 4) };
