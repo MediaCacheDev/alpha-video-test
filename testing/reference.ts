@@ -25,9 +25,10 @@ type Decoder = { name: string; frames: (file: string, layout: Layout) => Frames 
 function decodersFor(file: string): Decoder[] {
   if (/\.ktx2$/.test(file)) return [{ name: 'reference (KTX-Software)', frames: referenceKTX2 }];
   const decoders: Decoder[] = [{ name: 'reference (FFmpeg)', frames: referenceWebM }];
-  // The C++ core decodes VP9 only (AV1 plays through MediaCodec), and ffmpeg-kit single streams only.
-  if (streamCodec(file, 0) === 'vp9') decoders.push({ name: 'C++ player model', frames: cppModel });
-  if (!isDualStream(file)) decoders.push({ name: 'ffmpeg-kit GPU model', frames: ffmpegKitGpuModel });
+  // The C++ player model covers libvpx (VP8 and VP9); ffmpeg-kit decodes single VP9 streams only.
+  const codec = streamCodec(file, 0);
+  if (codec !== 'av1') decoders.push({ name: 'C++ player model', frames: cppModel });
+  if (!isDualStream(file) && codec === 'vp9') decoders.push({ name: 'ffmpeg-kit GPU model', frames: ffmpegKitGpuModel });
   return decoders;
 }
 

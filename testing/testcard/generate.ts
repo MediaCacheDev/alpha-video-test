@@ -5,7 +5,7 @@
  *
  * Per size it writes layout.json, source.rgba (straight alpha, all frames), frames/f_NNN.png,
  * the WebM fixtures (ffmpeg) and, for sizes up to 512 px, the KTX2 fixtures (texenc).
- * Needs ffmpeg with libvpx-vp9 and libsvtav1, and the encoder repo next to this one (or TEXENC=path/to/texenc.js).
+ * Needs ffmpeg with libvpx (VP8 and VP9) and libsvtav1, and the encoder repo next to this one (or TEXENC=path/to/texenc.js).
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -74,6 +74,18 @@ function encodeWebMs(layout: Layout, dir: string, rawPath: string): string[] {
     '-c:v', 'libsvtav1', '-crf', '32', '-preset', '8', ...gop, ...tags,
     '-metadata:s:v:1', 'title=Alpha', path.join(dir, 'dual_av1_10bit.webm')]);
   written.push('dual_av1_10bit.webm');
+
+  // VP8 has no matrix but BT.601, at any size, and no alpha format but a second 4:2:0 stream
+  const vp8 = ['-c:v', 'libvpx', '-crf', '10', '-b:v', '4M', '-auto-alt-ref', '0', ...gop];
+  const bt601 = colourOptions({ ...layout, height: 0 });
+  ffmpeg([...rawInput(layout, rawPath), '-vf', `${bt601.scale},format=yuva420p`, ...vp8, ...bt601.tags,
+    '-metadata:s:v:0', 'alpha_mode=1', path.join(dir, 'yuva_vp8.webm')]);
+  written.push('yuva_vp8.webm');
+
+  const splitVp8 = split.replace(scale, bt601.scale).replace('alphaextract,format=gray', 'alphaextract,format=yuv420p');
+  ffmpeg([...rawInput(layout, rawPath), '-filter_complex', splitVp8, '-map', '[rgb]', '-map', '[alpha]',
+    ...vp8, ...bt601.tags, '-metadata:s:v:1', 'title=Alpha', path.join(dir, 'dual_vp8.webm')]);
+  written.push('dual_vp8.webm');
   return written;
 }
 

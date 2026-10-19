@@ -7,13 +7,18 @@
  */
 export const KNOWN_ISSUES: { match: RegExp; reason: string; emulatorOnly?: boolean }[] = [
   {
-    match: /^android card_383x217\/(dual_vp9_p0|yuva)\.webm cpp default( mediacodec-hw)?( play)?$/,
-    reason: 'The emulator\'s MediaCodec VP9 decoder rejects 383x217 (BAD_VALUE), and AlphaVideoView has no software fallback once MediaCodec is chosen',
+    match: /^android card_383x217\/(dual_vp9_p0|yuva|dual_vp8|yuva_vp8)\.webm cpp default( mediacodec-hw)?( play)?$/,
+    reason: 'The emulator\'s MediaCodec VP9 and VP8 decoders reject 383x217 (BAD_VALUE), and AlphaVideoView has no software fallback once MediaCodec is chosen',
     emulatorOnly: true,
   },
   {
     match: /^android card_1920x1080\/yuva\.webm cpp default( mediacodec-hw)?$/,
     reason: 'Emulator: the goldfish VP9 decoder treats a 1080p alpha stream as limited range, though libvpx stores BlockAdditional alpha full range (256x256 is right)',
+    emulatorOnly: true,
+  },
+  {
+    match: /^android card_\d+x\d+\/yuva_vp8\.webm cpp default( mediacodec-hw| mediacodec-sw)?$/,
+    reason: 'Emulator: no GL_EXT_YUV_target, and the driver converts both VP8 decoders\' BlockAdditional alpha as limited range at every size (goldfish VP9 does at 1080p), 15 levels off',
     emulatorOnly: true,
   },
   {

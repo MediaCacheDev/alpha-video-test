@@ -60,6 +60,11 @@ export function streamCodec(file: string, stream: number): string {
     '-of', 'default=nw=1:nk=1', file]).toString().trim();
 }
 
+/** FFmpeg's libvpx decoder for a single-stream file, the one that decodes BlockAdditional alpha. */
+function libvpxWithAlpha(file: string): string {
+  return streamCodec(file, 0) === 'vp8' ? 'libvpx' : 'libvpx-vp9';
+}
+
 export function isDualStream(file: string): boolean {
   return run('ffprobe', ['-v', 'error', '-select_streams', 'v', '-show_entries', 'stream=index', '-of', 'csv=p=0', file])
     .toString().trim().split('\n').length > 1;
@@ -79,7 +84,7 @@ export async function* referenceWebM(file: string, layout: Layout): Frames {
   const { width: w, height: h } = layout;
   const args = isDualStream(file)
     ? ['-i', file, '-filter_complex', '[0:v:0]format=rgba[c];[0:v:1]format=gray[a];[c][a]alphamerge[o]', '-map', '[o]']
-    : ['-c:v', 'libvpx-vp9', '-i', file];
+    : ['-c:v', libvpxWithAlpha(file), '-i', file];
   for await (const frame of ffmpegChunks([...args, '-f', 'rawvideo', '-pix_fmt', 'rgba', '-'], w * h * 4)) {
     yield straightToPremultiplied(frame, w, h);
   }
@@ -197,7 +202,7 @@ export async function* cppModel(file: string, layout: Layout): Frames {
   const { range, space } = streamColour(file, 0);
   const m = yuvToRgb(range, space, w, h);
   if (!isDualStream(file)) {
-    for await (const frame of ffmpegChunks(['-c:v', 'libvpx-vp9', '-i', file, '-f', 'rawvideo', '-pix_fmt', 'yuva420p', '-'],
+    for await (const frame of ffmpegChunks(['-c:v', libvpxWithAlpha(file), '-i', file, '-f', 'rawvideo', '-pix_fmt', 'yuva420p', '-'],
       planeBytes.yuva420p(w, h))) {
       const p = ffmpegPlanes(frame, w, h);
       yield shaderToImage({ ...p, a: p.a!, ...chroma }, w, h, m);
