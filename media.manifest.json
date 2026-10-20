@@ -17,6 +17,11 @@
       "sha256": "aaba3bac6567227b9f015edae6232053514346263447bd938fe9f0301266983c"
     },
     {
+      "name": "seek_uncompressed.ktx2",
+      "size": 5898592,
+      "sha256": "5932de078a3dbbde35090ce55383286215681967575d66ff17852167f71b3099"
+    },
+    {
       "name": "test_apng.apng",
       "size": 12810379,
       "sha256": "fd6698d543d42267cc21f649c5f41c391cdc72e5e0ca4d68c655e44810e7fe11"
@@ -28,13 +33,13 @@
     },
     {
       "name": "test_stream.ktx2",
-      "size": 4862412,
-      "sha256": "c8851fc94b63f1dfee172ab2dfbcc20d330b51b126a8b0b6e51cb64070a32306"
+      "size": 4862216,
+      "sha256": "c6965c90119f03e22a6e802e1461578d009c401b16c40c279cc2a297c788ab8e"
     },
     {
       "name": "test_uncompressed.ktx2",
-      "size": 28960544,
-      "sha256": "73cba568b0ce4cac14745c33c3b572d446033e5071f7139096dff4ec7853f096"
+      "size": 28960352,
+      "sha256": "4ddafaee78e5f725d08fe50858453ad6e07ac7136929dee76215bdf57617dcfb"
     },
     {
       "name": "test_webm.webm",
