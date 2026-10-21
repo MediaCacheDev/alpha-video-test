@@ -20,10 +20,9 @@ export interface PerformanceMetrics {
   gpuMemoryTotal: number;
   gpuName: string;
   isRealGpuMemory: boolean; // true = real GPU memory from Metal/Android API, false = not available
-  instanceCount: { ktx2: number; ktx2zst: number; ktx2raw: number; webm: number; webmcpp: number; apng: number; avif: number };
 }
 
-export const usePerformanceMetrics = (ktx2Count: number, ktx2ZstCount: number = 0, ktx2RawCount: number = 0, webmCount: number = 0, webmCppCount: number = 0, apngCount: number = 0, avifCount: number = 0) => {
+export const usePerformanceMetrics = () => {
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
     fps: 0,
     frameTime: 0,
@@ -37,7 +36,6 @@ export const usePerformanceMetrics = (ktx2Count: number, ktx2ZstCount: number = 
     gpuMemoryTotal: 0,
     gpuName: 'Loading...',
     isRealGpuMemory: false,
-    instanceCount: { ktx2: 0, ktx2zst: 0, ktx2raw: 0, webm: 0, webmcpp: 0, apng: 0, avif: 0 },
   });
 
   const frameTimesRef = useRef<number[]>([]);
@@ -110,13 +108,12 @@ export const usePerformanceMetrics = (ktx2Count: number, ktx2ZstCount: number = 
           gpuMemoryTotal: nativeMetrics.gpuMemoryTotal || 0,
           gpuName: nativeMetrics.gpuName || 'Unknown',
           isRealGpuMemory: nativeMetrics.isRealGpuMemory === true,
-          instanceCount: { ktx2: ktx2Count, ktx2zst: ktx2ZstCount, ktx2raw: ktx2RawCount, webm: webmCount, webmcpp: webmCppCount, apng: apngCount, avif: avifCount },
         });
       }
     }, 500);
 
     return () => clearInterval(interval);
-  }, [ktx2Count, ktx2ZstCount, ktx2RawCount, webmCount, webmCppCount, apngCount, avifCount]);
+  }, []);
 
   return metrics;
 };

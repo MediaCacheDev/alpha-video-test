@@ -7,29 +7,9 @@
       "sha256": "089bd6eb4990463ee96b84b7a36d898e64d77429c6713f754503321c9055eb38"
     },
     {
-      "name": "manta_dual.webm",
-      "size": 4910525,
-      "sha256": "1eb4f6a98c672b447a99d1f5df36f8adb6c5c826870673fa31d67df080e617d9"
-    },
-    {
-      "name": "manta_dual_av1.webm",
-      "size": 6427664,
-      "sha256": "aaba3bac6567227b9f015edae6232053514346263447bd938fe9f0301266983c"
-    },
-    {
-      "name": "seek_uncompressed.ktx2",
-      "size": 5898592,
-      "sha256": "5932de078a3dbbde35090ce55383286215681967575d66ff17852167f71b3099"
-    },
-    {
-      "name": "test_apng.apng",
-      "size": 12810379,
-      "sha256": "fd6698d543d42267cc21f649c5f41c391cdc72e5e0ca4d68c655e44810e7fe11"
-    },
-    {
-      "name": "test_avif.avif",
-      "size": 5076438,
-      "sha256": "60e2ee81509ea3901006142b7f3667162f72a33d415eeafc5a414c2c7ed6ef67"
+      "name": "manta_stream.ktx2",
+      "size": 94053673,
+      "sha256": "7333543f94af1298975b2f9c1b5d8f8f8a7b10d03f4f5dda34cae3364ec34ee5"
     },
     {
       "name": "test_stream.ktx2",
@@ -37,24 +17,9 @@
       "sha256": "c6965c90119f03e22a6e802e1461578d009c401b16c40c279cc2a297c788ab8e"
     },
     {
-      "name": "test_uncompressed.ktx2",
-      "size": 28960352,
-      "sha256": "4ddafaee78e5f725d08fe50858453ad6e07ac7136929dee76215bdf57617dcfb"
-    },
-    {
       "name": "test_webm.webm",
       "size": 5724655,
       "sha256": "554b794d5a3c1f05eca5ad42d1fac016e81f8abb29d25c4d761c08f7f0091c82"
-    },
-    {
-      "name": "test_webm_dual.webm",
-      "size": 555501,
-      "sha256": "4388f757098fe4e1b28f0aa62efea7859c47a5138c02ad202fd365650e2d8c22"
-    },
-    {
-      "name": "test_webm_dual_av1.webm",
-      "size": 636139,
-      "sha256": "02d39003ff89f8102be5af1f9c400fc6d7c4c2e899e4c17d09407e0ed94d9c57"
     }
   ]
 }

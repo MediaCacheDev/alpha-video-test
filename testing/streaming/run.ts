@@ -61,10 +61,11 @@ const media = (name: string) => fs.readFileSync(path.join(demoRoot, 'assets/medi
 const clips = {
   dual: webm(makeClip('dual.webm', true)),
   yuva: webm(makeClip('yuva.webm', false)),
-  ktx2Seek: ktx2(makeKtx2Clip()),
+  // 6 s with a seek point every 1 MB of ASTC (15 of them)
+  ktx2Seek: ktx2(makeKtx2Clip('seek.ktx2', '384x216', 6, ['--zstd', '3', '--seek-interval', '1'])),
   // 6 s, zstd as one stream (no seek table), and 3 s uncompressed: both read whole or in order
   ktx2Stream: { ...ktx2(media('test_stream.ktx2')), seekTo: 3 },
-  ktx2Uncompressed: { ...ktx2(media('seek_uncompressed.ktx2')), seekTo: 2 },
+  ktx2Uncompressed: { ...ktx2(makeKtx2Clip('uncompressed.ktx2', '256x256', 3, ['--zstd', '0'])), seekTo: 2 },
 };
 
 /** A 10 s 480x270 clip, noisy so it doesn't compress to nothing, a keyframe a second; Cues at the end. */
@@ -88,15 +89,15 @@ function makeClip(name: string, dualStream: boolean): Buffer {
   return fs.readFileSync(file);
 }
 
-/** A 6 s 384x216 KTX2 clip, noisy, zstd with a seek point every 1 MB of ASTC (15 of them). */
-function makeKtx2Clip(): Buffer {
-  const file = path.join(build, 'seek.ktx2');
+/** A noisy 30 fps KTX2 clip, encoded with texenc and the given options. */
+function makeKtx2Clip(name: string, size: string, seconds: number, texencArgs: string[]): Buffer {
+  const file = path.join(build, name);
   if (!fs.existsSync(file)) {
     fs.mkdirSync(build, { recursive: true });
-    const video = path.join(build, 'ktx2-source.mov');
-    run('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=s=384x216:r=30:d=6,noise=alls=12:allf=t,format=rgba', '-c:v', 'png', video]);
+    const video = path.join(build, `${name}-source.mov`);
+    run('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', `testsrc2=s=${size}:r=30:d=${seconds},noise=alls=12:allf=t,format=rgba`, '-c:v', 'png', video]);
     const texenc = path.resolve(demoRoot, '../alpha-video-gpu-encoder/texenc.js');
-    run(process.execPath, [texenc, '-v', video, '--frame-count', '180', '-o', file, '--astc-quality', 'fastest', '--zstd', '3', '--seek-interval', '1', '-y']);
+    run(process.execPath, [texenc, '-v', video, '--frame-count', String(seconds * 30), '-o', file, '--astc-quality', 'fastest', ...texencArgs, '-y']);
   }
   return fs.readFileSync(file);
 }

@@ -11,11 +11,13 @@ import {
 
 interface DraggableContainerProps {
   id: string;
-  type: 'ktx2' | 'ktx2uncompressed' | 'webm' | 'webmcpp' | 'exovp9alpha' | 'apng' | 'avif';
+  /** The player, in the header */
+  tag: string;
+  color: string;
   initialX: number;
   initialY: number;
   zIndex: number;
-  /** Shown after the ID in the footer, e.g. the decoder a player reported */
+  /** Shown after the ID in the footer: the clip and variant, and the decoder a player reported */
   caption?: string;
   onZIndexChange: (id: string, newZIndex: number) => void;
   onRemove: (id: string) => void;
@@ -24,7 +26,8 @@ interface DraggableContainerProps {
 
 export const DraggableContainer: React.FC<DraggableContainerProps> = ({
   id,
-  type,
+  tag,
+  color,
   initialX,
   initialY,
   zIndex,
@@ -76,8 +79,6 @@ export const DraggableContainer: React.FC<DraggableContainerProps> = ({
     }
   };
 
-  const typeColor = type === 'ktx2' ? '#4CAF50' : type === 'webm' ? '#2196F3' : type === 'webmcpp' ? '#00BCD4' : type === 'apng' ? '#9C27B0' : '#FF5722';
-
   return (
     <Animated.View
       style={[
@@ -85,7 +86,7 @@ export const DraggableContainer: React.FC<DraggableContainerProps> = ({
         {
           transform: pan.getTranslateTransform(),
           zIndex,
-          borderColor: typeColor,
+          borderColor: color,
         },
       ]}
     >
@@ -94,7 +95,7 @@ export const DraggableContainer: React.FC<DraggableContainerProps> = ({
         {/* Grip handle */}
         <View {...panResponder.panHandlers} style={styles.gripArea}>
           <Text style={styles.gripIcon}>✋</Text>
-          <Text style={styles.typeLabel}>{type === 'ktx2' ? 'ASTC' : type === 'webmcpp' ? 'WEBM-C++' : type.toUpperCase()}</Text>
+          <Text style={styles.typeLabel}>{tag}</Text>
         </View>
 
         {/* Z-Index controls */}

@@ -23,7 +23,16 @@ import {
   PerformancePanel,
   SpawnControls,
   ExoVp9AlphaView,
+  AssetPanel,
 } from './src/components';
+import {
+  DEFAULT_SELECTIONS,
+  PLAYER_BY_ID,
+  CLIPS,
+  fileFor,
+  type PlayerId,
+  type Selection,
+} from './src/catalog';
 import { usePerformanceMetrics } from './src/hooks/usePerformanceMetrics';
 
 // Import players - all have web support
@@ -32,60 +41,6 @@ import { AlphaVideoGpuView } from 'react-native-alpha-video-gpu';
 import { FFmpegKitAlphaView } from 'react-native-alpha-video-ffmpegkit';
 import { AlphaVideoView, type Decoder } from 'react-native-alpha-video';
 import { AnimatedImageView } from 'react-native-apng-avif';
-
-// Asset definitions per animation
-type AssetType = 'glow181' | 'manta1080p' | 'glowDual' | 'mantaDual' | 'glowDualAv1' | 'mantaDualAv1';
-
-interface AssetFiles {
-  ktx2Stream?: string;
-  ktx2Uncompressed?: string;
-  webm?: string;
-  apng?: string;
-  avif?: string;
-}
-
-// assets/media/, bundled into the APK, the iOS app and the web build (see scripts/fetch-media.mjs)
-const media = (file: string) => `asset://media/${file}`;
-
-// Every format exists for Glow 181, so the other assets fall back to it.
-const GLOW_181: Required<AssetFiles> = {
-  ktx2Stream: media('test_stream.ktx2'),
-  ktx2Uncompressed: media('test_uncompressed.ktx2'),
-  webm: media('test_webm.webm'),
-  apng: media('test_apng.apng'),
-  avif: media('test_avif.avif'),
-};
-
-const ASSETS: Record<AssetType, AssetFiles> = {
-  glow181: GLOW_181,
-  manta1080p: {
-    webm: media('manta_1080p_yuva.webm'),
-  },
-  // Dual-stream WebM files (alpha in separate VP9 stream - uses MediaCodec HW decoding)
-  glowDual: {
-    webm: media('test_webm_dual.webm'),
-    // Only WebM available for dual-stream
-  },
-  mantaDual: {
-    webm: media('manta_dual.webm'),
-  },
-  // Dual-stream AV1 files (alpha in separate AV1 stream - MediaCodec on Android, dav1d on iOS)
-  glowDualAv1: {
-    webm: media('test_webm_dual_av1.webm'),
-  },
-  mantaDualAv1: {
-    webm: media('manta_dual_av1.webm'),
-  },
-};
-
-const ASSET_LABELS: Record<AssetType, string> = {
-  glow181: 'Glow 181 (400x400)',
-  manta1080p: 'Manta YUVA (1080p)',
-  glowDual: 'Glow Dual VP9 (HW)',
-  mantaDual: 'Manta Dual VP9 (HW)',
-  glowDualAv1: 'Glow Dual AV1 (HW)',
-  mantaDualAv1: 'Manta Dual AV1 (HW)',
-};
 
 // The C++ player's decoder choices; MediaCodec exists only on Android, so iOS always uses software
 const DECODER_OPTIONS: [Decoder, string][] = [
@@ -101,7 +56,12 @@ const DEFAULT_PLAYER_SIZE = 150;
 
 interface AnimationInstance {
   id: string;
-  type: 'ktx2' | 'ktx2uncompressed' | 'webm' | 'webmcpp' | 'exovp9alpha' | 'apng' | 'avif';
+  player: PlayerId | 'exovp9alpha';
+  /** Fixed when the player is spawned, so later picks in the asset panel don't change it */
+  uri: string;
+  variant: string;
+  /** Clip and variant, e.g. 'Manta D-AV1' */
+  label: string;
   x: number;
   y: number;
   zIndex: number;
@@ -151,120 +111,55 @@ function AppContent() {
   const [ktx2PrefetchAhead, setKtx2PrefetchAhead] = useState(15);
   const [ktx2MemoryStrategy, setKtx2MemoryStrategy] = useState<'ram' | 'vram'>('vram');
 
-  // Asset selection
-  const [selectedAsset, setSelectedAsset] = useState<AssetType>('glow181');
+  // What each player's spawn button plays next
+  const [selections, setSelections] = useState<Record<PlayerId, Selection>>(DEFAULT_SELECTIONS);
+  const handleSelect = useCallback((player: PlayerId, selection: Selection) => {
+    setSelections(prev => ({ ...prev, [player]: selection }));
+  }, []);
 
   // Settings panels visibility
   const [showSettings, setShowSettings] = useState(true);
 
-  const ktx2Count = instances.filter(i => i.type === 'ktx2').length;
-  const ktx2UncompressedCount = instances.filter(i => i.type === 'ktx2uncompressed').length;
-  const webmCount = instances.filter(i => i.type === 'webm').length;
-  const webmCppCount = instances.filter(i => i.type === 'webmcpp').length;
-  const apngCount = instances.filter(i => i.type === 'apng').length;
-  const avifCount = instances.filter(i => i.type === 'avif').length;
-  const metrics = usePerformanceMetrics(ktx2Count, 0, ktx2UncompressedCount, webmCount, webmCppCount, apngCount, avifCount);
-
-  // Resolve asset URIs - fall back to glow181 if format not available for selected asset
-  const currentAsset = ASSETS[selectedAsset];
-  const ktx2StreamUri = currentAsset.ktx2Stream || GLOW_181.ktx2Stream;
-  const ktx2UncompressedUri = currentAsset.ktx2Uncompressed || GLOW_181.ktx2Uncompressed;
-  const webmUri = currentAsset.webm || GLOW_181.webm;
-  const apngUri = currentAsset.apng || GLOW_181.apng;
-  const avifUri = currentAsset.avif || GLOW_181.avif;
+  const counts: Partial<Record<PlayerId, number>> = {};
+  for (const inst of instances) {
+    if (inst.player !== 'exovp9alpha') counts[inst.player] = (counts[inst.player] ?? 0) + 1;
+  }
+  const metrics = usePerformanceMetrics();
 
   const getRandomPosition = useCallback(() => {
     const maxX = SCREEN_WIDTH - DEFAULT_PLAYER_SIZE - 40;
-    const maxY = SCREEN_HEIGHT - DEFAULT_PLAYER_SIZE - 200;
+    // Keeps the whole tile, header and footer included, above the spawn buttons and metrics
+    const maxY = SCREEN_HEIGHT - DEFAULT_PLAYER_SIZE - 340;
     return {
       x: Math.random() * Math.max(0, maxX) + 20,
       y: Math.random() * Math.max(0, maxY) + 100,
     };
   }, []);
 
-  const spawnKTX2 = useCallback(() => {
+  const addInstance = useCallback((player: AnimationInstance['player'], selection: Selection) => {
+    const catalogPlayer = PLAYER_BY_ID[player === 'exovp9alpha' ? 'ffmpegkit' : player];
+    const uri = fileFor(catalogPlayer, selection);
+    if (!uri) return;
+    const clip = CLIPS.find(c => c.id === selection.clip)!.label;
+    const variant = catalogPlayer.variants.find(v => v.id === selection.variant)!;
+    const label = `${clip} ${variant.label}`;
     const pos = getRandomPosition();
-    const newInstance: AnimationInstance = {
-      id: `ktx2-${++instanceCounter}`,
-      type: 'ktx2',
+    setInstances(prev => [...prev, {
+      id: `${player}-${++instanceCounter}`,
+      player,
+      uri,
+      variant: selection.variant,
+      label,
       x: pos.x,
       y: pos.y,
-      zIndex: instances.length,
-    };
-    setInstances(prev => [...prev, newInstance]);
-  }, [instances.length, getRandomPosition]);
+      zIndex: prev.length,
+    }]);
+  }, [getRandomPosition]);
 
-  const spawnKTX2Uncompressed = useCallback(() => {
-    const pos = getRandomPosition();
-    const newInstance: AnimationInstance = {
-      id: `ktx2uncompressed-${++instanceCounter}`,
-      type: 'ktx2uncompressed',
-      x: pos.x,
-      y: pos.y,
-      zIndex: instances.length,
-    };
-    setInstances(prev => [...prev, newInstance]);
-  }, [instances.length, getRandomPosition]);
+  const spawn = useCallback((player: PlayerId) => addInstance(player, selections[player]), [addInstance, selections]);
 
-  const spawnWebM = useCallback(() => {
-    const pos = getRandomPosition();
-    const newInstance: AnimationInstance = {
-      id: `webm-${++instanceCounter}`,
-      type: 'webm',
-      x: pos.x,
-      y: pos.y,
-      zIndex: instances.length,
-    };
-    setInstances(prev => [...prev, newInstance]);
-  }, [instances.length, getRandomPosition]);
-
-  const spawnWebMCpp = useCallback(() => {
-    const pos = getRandomPosition();
-    const newInstance: AnimationInstance = {
-      id: `webmcpp-${++instanceCounter}`,
-      type: 'webmcpp',
-      x: pos.x,
-      y: pos.y,
-      zIndex: instances.length,
-    };
-    setInstances(prev => [...prev, newInstance]);
-  }, [instances.length, getRandomPosition]);
-
-  const spawnExoVp9Alpha = useCallback(() => {
-    const pos = getRandomPosition();
-    const newInstance: AnimationInstance = {
-      id: `exovp9alpha-${++instanceCounter}`,
-      type: 'exovp9alpha',
-      x: pos.x,
-      y: pos.y,
-      zIndex: instances.length,
-    };
-    setInstances(prev => [...prev, newInstance]);
-  }, [instances.length, getRandomPosition]);
-
-  const spawnApng = useCallback(() => {
-    const pos = getRandomPosition();
-    const newInstance: AnimationInstance = {
-      id: `apng-${++instanceCounter}`,
-      type: 'apng',
-      x: pos.x,
-      y: pos.y,
-      zIndex: instances.length,
-    };
-    setInstances(prev => [...prev, newInstance]);
-  }, [instances.length, getRandomPosition]);
-
-  const spawnAvif = useCallback(() => {
-    const pos = getRandomPosition();
-    const newInstance: AnimationInstance = {
-      id: `avif-${++instanceCounter}`,
-      type: 'avif',
-      x: pos.x,
-      y: pos.y,
-      zIndex: instances.length,
-    };
-    setInstances(prev => [...prev, newInstance]);
-  }, [instances.length, getRandomPosition]);
+  // ExoPlayer plays single-stream VP9, so it takes the FFmpegKit player's pick
+  const spawnExoVp9Alpha = useCallback(() => addInstance('exovp9alpha', selections.ffmpegkit), [addInstance, selections]);
 
   const handleZIndexChange = useCallback((id: string, newZIndex: number) => {
     setInstances(prev =>
@@ -318,7 +213,7 @@ function AppContent() {
       </View>
 
       {showSettings && <View style={[styles.settingsColumnLeft, { top: insets.top + 60 }]}>
-        {/* Asset Selector - top left */}
+        {/* Real size, then what each player spawns with - top left */}
         <View style={styles.assetSelector}>
           <View style={styles.assetSwitchRow}>
             <Text style={styles.assetLabel}>Real Size</Text>
@@ -329,39 +224,10 @@ function AppContent() {
               thumbColor={useRealSize ? '#fff' : '#888'}
             />
           </View>
-          <Text style={styles.assetLabel}>Asset:</Text>
-          {(Object.keys(ASSETS) as AssetType[]).map(assetKey => (
-            <TouchableOpacity
-              key={assetKey}
-              style={[
-                styles.assetOption,
-                selectedAsset === assetKey && styles.assetOptionSelected,
-              ]}
-              onPress={() => setSelectedAsset(assetKey)}
-            >
-              <Text style={[
-                styles.assetOptionText,
-                selectedAsset === assetKey && styles.assetOptionTextSelected,
-              ]}>
-                {ASSET_LABELS[assetKey]}
-              </Text>
-            </TouchableOpacity>
-          ))}
         </View>
 
-        {/* WebM FFmpegKit Settings Panel, under the asset selector so the right column ends above the spawn buttons */}
-        <View style={styles.streamingPanel}>
-          <Text style={styles.streamingTitle}>WebM FFmpegKit</Text>
-          <View style={styles.streamingRow}>
-            <Text style={styles.streamingLabel}>Stream</Text>
-            <Switch
-              value={webmKitStream}
-              onValueChange={setWebmKitStream}
-              trackColor={{ false: '#555', true: '#4a9' }}
-              thumbColor={webmKitStream ? '#fff' : '#888'}
-            />
-          </View>
-        </View>
+        <AssetPanel selections={selections} onSelect={handleSelect} />
+
       </View>}
 
       {/* Animation instances */}
@@ -369,11 +235,12 @@ function AppContent() {
         <DraggableContainer
           key={instance.id}
           id={instance.id}
-          type={instance.type}
+          tag={instance.player === 'exovp9alpha' ? 'EXOPLAYER' : PLAYER_BY_ID[instance.player].tag}
+          color={instance.player === 'exovp9alpha' ? '#FF9800' : PLAYER_BY_ID[instance.player].color}
           initialX={instance.x}
           initialY={instance.y}
           zIndex={instance.zIndex}
-          caption={instance.decoder}
+          caption={instance.decoder ? `${instance.label} | ${instance.decoder}` : instance.label}
           onZIndexChange={handleZIndexChange}
           onRemove={handleRemove}
         >
@@ -382,10 +249,10 @@ function AppContent() {
             const h = useRealSize ? (instance.height || DEFAULT_PLAYER_SIZE) : DEFAULT_PLAYER_SIZE;
             const sizeStyle = { width: w, height: h };
 
-            if (instance.type === 'ktx2') return (
+            if (instance.player === 'astc') return (
               <AlphaVideoGpuView
                 style={sizeStyle}
-                source={{ uri: ktx2StreamUri }}
+                source={{ uri: instance.uri }}
                 memoryStrategy={ktx2MemoryStrategy}
                 autoPlay
                 loop
@@ -396,34 +263,20 @@ function AppContent() {
                 onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
               />
             );
-            if (instance.type === 'ktx2uncompressed') return (
-              <AlphaVideoGpuView
-                style={sizeStyle}
-                source={{ uri: ktx2UncompressedUri }}
-                memoryStrategy={ktx2MemoryStrategy}
-                autoPlay
-                loop
-                stream
-                streamingRingSize={ktx2RingSize}
-                streamingCacheSize={ktx2CacheSize}
-                streamingPrefetchAhead={ktx2PrefetchAhead}
-                onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
-              />
-            );
-            if (instance.type === 'webm') return (
+            if (instance.player === 'ffmpegkit') return (
               <FFmpegKitAlphaView
                 style={sizeStyle}
-                source={{ uri: webmUri }}
+                source={{ uri: instance.uri }}
                 mode={webmKitStream ? 'stream' : 'preload'}
                 autoPlay
                 loop
                 onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
               />
             );
-            if (instance.type === 'webmcpp') return (
+            if (instance.player === 'cpp') return (
               <AlphaVideoView
                 style={sizeStyle}
-                source={{ uri: webmUri }}
+                source={{ uri: instance.uri }}
                 autoPlay
                 loop
                 verbose={false}
@@ -435,26 +288,26 @@ function AppContent() {
                 onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
               />
             );
-            if (instance.type === 'exovp9alpha') return (
+            if (instance.player === 'exovp9alpha') return (
               <ExoVp9AlphaView
                 style={sizeStyle}
-                source={{ uri: webmUri }}
+                source={{ uri: instance.uri }}
                 autoPlay
                 loop
               />
             );
-            if (instance.type === 'apng') return (
+            if (instance.player === 'apng') return (
               <AnimatedImageView
                 style={sizeStyle}
-                source={{ uri: apngUri }}
+                source={{ uri: instance.uri }}
                 autoPlay
                 loop
               />
             );
-            if (instance.type === 'avif') return (
+            if (instance.player === 'avif') return (
               <AnimatedImageView
                 style={sizeStyle}
-                source={{ uri: avifUri }}
+                source={{ uri: instance.uri }}
                 autoPlay
                 loop
               />
@@ -465,8 +318,96 @@ function AppContent() {
       ))}
 
       {showSettings && <View style={[styles.settingsColumn, { top: insets.top + 70 }]}>
+        {/* KTX2/ASTC Settings Panel */}
+        <View style={[styles.streamingPanel, { borderColor: PLAYER_BY_ID.astc.color }]}>
+          <Text style={styles.streamingTitle}>ASTC (alpha-video-gpu)</Text>
+          <View style={styles.streamingRow}>
+            <Text style={styles.streamingLabel}>Stream</Text>
+            <Switch
+              value={ktx2StreamEnabled}
+              onValueChange={setKtx2StreamEnabled}
+              trackColor={{ false: '#555', true: '#4a9' }}
+              thumbColor={ktx2StreamEnabled ? '#fff' : '#888'}
+            />
+          </View>
+          <View style={styles.streamingRow}>
+            <Text style={styles.streamingLabel}>{ktx2MemoryStrategy.toUpperCase()}</Text>
+            <Switch
+              value={ktx2MemoryStrategy === 'vram'}
+              onValueChange={(v) => setKtx2MemoryStrategy(v ? 'vram' : 'ram')}
+              trackColor={{ false: '#555', true: '#4a9' }}
+              thumbColor={ktx2MemoryStrategy === 'vram' ? '#fff' : '#888'}
+            />
+          </View>
+          <View style={styles.streamingRow}>
+            <Text style={styles.streamingLabel}>Ring: {ktx2RingSize}</Text>
+            <View style={styles.arrowButtons}>
+              <TouchableOpacity
+                style={styles.arrowBtn}
+                onPress={() => setKtx2RingSize(v => Math.max(4, v - 2))}
+              >
+                <Text style={styles.arrowText}>−</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.arrowBtn}
+                onPress={() => setKtx2RingSize(v => Math.min(32, v + 2))}
+              >
+                <Text style={styles.arrowText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.streamingRow}>
+            <Text style={styles.streamingLabel}>Cache: {ktx2CacheSize}</Text>
+            <View style={styles.arrowButtons}>
+              <TouchableOpacity
+                style={styles.arrowBtn}
+                onPress={() => setKtx2CacheSize(v => Math.max(10, v - 5))}
+              >
+                <Text style={styles.arrowText}>−</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.arrowBtn}
+                onPress={() => setKtx2CacheSize(v => Math.min(120, v + 5))}
+              >
+                <Text style={styles.arrowText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.streamingRow}>
+            <Text style={styles.streamingLabel}>Prefetch: {ktx2PrefetchAhead}</Text>
+            <View style={styles.arrowButtons}>
+              <TouchableOpacity
+                style={styles.arrowBtn}
+                onPress={() => setKtx2PrefetchAhead(v => Math.max(5, v - 5))}
+              >
+                <Text style={styles.arrowText}>−</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.arrowBtn}
+                onPress={() => setKtx2PrefetchAhead(v => Math.min(60, v + 5))}
+              >
+                <Text style={styles.arrowText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        {/* WebM FFmpegKit Settings Panel */}
+        <View style={[styles.streamingPanel, { borderColor: PLAYER_BY_ID.ffmpegkit.color }]}>
+          <Text style={styles.streamingTitle}>WebM FFmpegKit</Text>
+          <View style={styles.streamingRow}>
+            <Text style={styles.streamingLabel}>Stream</Text>
+            <Switch
+              value={webmKitStream}
+              onValueChange={setWebmKitStream}
+              trackColor={{ false: '#555', true: '#4a9' }}
+              thumbColor={webmKitStream ? '#fff' : '#888'}
+            />
+          </View>
+        </View>
+
         {/* WebM C++ Settings Panel */}
-        <View style={styles.streamingPanel}>
+        <View style={[styles.streamingPanel, { borderColor: PLAYER_BY_ID.cpp.color }]}>
           <Text style={styles.streamingTitle}>WebM C++</Text>
           <View style={styles.streamingRow}>
             <Text style={styles.streamingLabel}>Mode</Text>
@@ -559,104 +500,17 @@ function AppContent() {
             </View>
           </View>
         </View>
-
-        {/* KTX2/ASTC Settings Panel */}
-        <View style={styles.streamingPanel}>
-          <Text style={styles.streamingTitle}>KTX2/ASTC</Text>
-          <View style={styles.streamingRow}>
-            <Text style={styles.streamingLabel}>Stream</Text>
-            <Switch
-              value={ktx2StreamEnabled}
-              onValueChange={setKtx2StreamEnabled}
-              trackColor={{ false: '#555', true: '#4a9' }}
-              thumbColor={ktx2StreamEnabled ? '#fff' : '#888'}
-            />
-          </View>
-        </View>
-
-        {/* KTX2 ZST Streaming Settings Panel */}
-        <View style={styles.streamingPanel}>
-          <Text style={styles.streamingTitle}>KTX2 ZST</Text>
-          <View style={styles.streamingRow}>
-            <Text style={styles.streamingLabel}>{ktx2MemoryStrategy.toUpperCase()}</Text>
-            <Switch
-              value={ktx2MemoryStrategy === 'vram'}
-              onValueChange={(v) => setKtx2MemoryStrategy(v ? 'vram' : 'ram')}
-              trackColor={{ false: '#555', true: '#4a9' }}
-              thumbColor={ktx2MemoryStrategy === 'vram' ? '#fff' : '#888'}
-            />
-          </View>
-          <View style={styles.streamingRow}>
-            <Text style={styles.streamingLabel}>Ring: {ktx2RingSize}</Text>
-            <View style={styles.arrowButtons}>
-              <TouchableOpacity
-                style={styles.arrowBtn}
-                onPress={() => setKtx2RingSize(v => Math.max(4, v - 2))}
-              >
-                <Text style={styles.arrowText}>−</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.arrowBtn}
-                onPress={() => setKtx2RingSize(v => Math.min(32, v + 2))}
-              >
-                <Text style={styles.arrowText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View style={styles.streamingRow}>
-            <Text style={styles.streamingLabel}>Cache: {ktx2CacheSize}</Text>
-            <View style={styles.arrowButtons}>
-              <TouchableOpacity
-                style={styles.arrowBtn}
-                onPress={() => setKtx2CacheSize(v => Math.max(10, v - 5))}
-              >
-                <Text style={styles.arrowText}>−</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.arrowBtn}
-                onPress={() => setKtx2CacheSize(v => Math.min(120, v + 5))}
-              >
-                <Text style={styles.arrowText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View style={styles.streamingRow}>
-            <Text style={styles.streamingLabel}>Prefetch: {ktx2PrefetchAhead}</Text>
-            <View style={styles.arrowButtons}>
-              <TouchableOpacity
-                style={styles.arrowBtn}
-                onPress={() => setKtx2PrefetchAhead(v => Math.max(5, v - 5))}
-              >
-                <Text style={styles.arrowText}>−</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.arrowBtn}
-                onPress={() => setKtx2PrefetchAhead(v => Math.min(60, v + 5))}
-              >
-                <Text style={styles.arrowText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
       </View>}
 
-      {/* Spawn controls */}
-      <View style={[styles.controlsContainer, { bottom: insets.bottom + 130 }]}>
+      {/* Spawn controls stacked on the metrics panel, so neither overlaps the other */}
+      <View style={[styles.bottomDock, { paddingBottom: insets.bottom }]}>
         <SpawnControls
-          onSpawnKTX2={spawnKTX2}
-          onSpawnKTX2Uncompressed={spawnKTX2Uncompressed}
-          onSpawnWebM={spawnWebM}
-          onSpawnWebMCpp={spawnWebMCpp}
+          selections={selections}
+          onSpawn={spawn}
           onSpawnExoVp9Alpha={Platform.OS === 'android' ? spawnExoVp9Alpha : undefined}
-          onSpawnApng={spawnApng}
-          onSpawnAvif={spawnAvif}
           onClearAll={clearAll}
         />
-      </View>
-
-      {/* Performance metrics panel */}
-      <View style={[styles.metricsContainer, { paddingBottom: insets.bottom }]}>
-        <PerformancePanel metrics={metrics} />
+        <PerformancePanel metrics={metrics} counts={counts} />
       </View>
     </View>
   );
@@ -713,18 +567,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
   },
-  controlsContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    // Ensure absolute positioning works on web
-    ...(Platform.OS === 'web' ? { 
-      width: '100%',
-      position: 'fixed',
-    } : {}),
-  },
-  metricsContainer: {
+  bottomDock: {
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -745,6 +588,8 @@ const styles = StyleSheet.create({
   streamingPanel: {
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
     borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
     padding: 8,
     marginBottom: 6,
   },
@@ -826,10 +671,12 @@ const styles = StyleSheet.create({
     zIndex: 1001,
   },
   assetSelector: {
+    width: 172,
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
     borderRadius: 8,
-    padding: 8,
-    marginBottom: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginBottom: 5,
   },
   assetLabel: {
     color: '#aaa',
@@ -841,25 +688,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  assetOption: {
-    backgroundColor: '#555',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    marginVertical: 2,
-    borderRadius: 4,
-  },
-  assetOptionSelected: {
-    backgroundColor: '#4a9',
-  },
-  assetOptionText: {
-    color: '#aaa',
-    fontSize: 11,
-  },
-  assetOptionTextSelected: {
-    color: '#fff',
-    fontWeight: 'bold',
   },
 });
 

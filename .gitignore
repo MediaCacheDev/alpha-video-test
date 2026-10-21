@@ -72,6 +72,7 @@ yarn-error.log
 # Demo media and prebuilt binaries (not committed; see the release plan)
 src/assets/
 assets/media/
+src/media.generated.json
 android/app/libs/*.aar
 android/app/src/main/jniLibs/
 android/app/src/main/prebuilt/

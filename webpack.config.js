@@ -1,6 +1,9 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const { writeMediaIndex } = require('./scripts/media-index');
+
+writeMediaIndex();
 
 const appDirectory = path.resolve(__dirname);
 

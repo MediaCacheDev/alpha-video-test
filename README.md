@@ -4,22 +4,30 @@ A React Native app (Android, iOS and web) that plays the same transparent video 
 
 ## The players it compares
 
-| Button | Package | Format |
+Each button at the bottom is one player:
+
+| Button | Package | What it plays |
 |---|---|---|
-| **+ ASTC** | [alpha-video-gpu](https://github.com/MediaCacheDev/alpha-video-gpu) | KTX2 ASTC texture array, zstd-compressed, drawn without decoding |
-| **+ Raw** | [alpha-video-gpu](https://github.com/MediaCacheDev/alpha-video-gpu) | KTX2 ASTC texture array, uncompressed (read straight from the file) |
-| **+ WebM** (C++ FFmpeg) | [alpha-video](https://github.com/MediaCacheDev/alpha-video) | VP8 or VP9 alpha WebM, or dual-stream VP8/VP9/AV1; MediaCodec in hardware on Android where it can |
-| **+ WebM** (FFmpegKit) | [alpha-video-ffmpegkit](https://github.com/MediaCacheDev/alpha-video-ffmpegkit) | VP9 alpha WebM, the first attempt, kept as a reference |
+| **+ ASTC** | [alpha-video-gpu](https://github.com/MediaCacheDev/alpha-video-gpu) | KTX2 ASTC texture arrays, drawn without decoding: zstd-compressed (**Zstd**) or uncompressed (**Raw**) |
+| **+ WebM** (FFmpegKit) | [alpha-video-ffmpegkit](https://github.com/MediaCacheDev/alpha-video-ffmpegkit) | VP9 alpha WebM, single stream only. The first attempt, kept as a reference |
+| **+ WebM** (C++) | [alpha-video](https://github.com/MediaCacheDev/alpha-video) | VP8 or VP9 alpha WebM, and dual-stream VP8/VP9/AV1. Its C++ core decodes with libvpx and dav1d; on Android, MediaCodec decodes in hardware where it can |
+| **+ APNG**, **+ AVIF** | [react-native-apng-avif](https://github.com/MediaCacheDev/react-native-apng-avif) | Animated PNG and animated AVIF (one package, two buttons) |
 | **+ ExoPlayer** (Android) | in this app (`android/app/src/main/java/dev/mediacache/alphavideotest/exoplayer/`) | VP9 alpha WebM in an ExoPlayer-style view that demuxes and decodes with FFmpeg (ExoPlayer's demuxer drops the alpha); an experiment, not published |
-| **+ APNG**, **+ AVIF** | [react-native-apng-avif](https://github.com/MediaCacheDev/react-native-apng-avif) | Animated PNG and animated AVIF |
 
 The KTX2 files are made with [alpha-video-gpu-encoder](https://github.com/MediaCacheDev/alpha-video-gpu-encoder). [alpha-video](https://github.com/MediaCacheDev/alpha-video#alpha-video-or-alpha-video-gpu) explains when to pick a codec and when ASTC.
 
-The settings panels choose the clip (a 400×400 glow or a 1080p manta, single-stream or dual-stream VP9/AV1), each player's mode (`preload` or `stream`), the C++ player's decoder on Android (`auto`, `mediacodec-hw`, `software`, ...) and the KTX2 streaming buffers. Each tile shows the decoder it ended up on.
+The asset panel on the left has a section per player, in the player's colour, and each section keeps its own choice of what its button spawns next:
+
+- the clip: **Glow** (400×400, 181 frames at 30 fps, mostly transparent) or **Manta** (1920×1080, 424 frames at 29.97 fps);
+- the variant, where the player reads more than one: **Zstd** or **Raw** for ASTC; for the C++ player **S-VP9** (single stream, the alpha inside the VP9 stream), **D-VP9** and **D-AV1** (dual stream, the alpha in its own track). FFmpegKit and ExoPlayer play S-VP9 only.
+
+A player keeps the file it was spawned with, so changing the panel only affects the next spawn. The panels on the right set each player's playback: modes (`preload` or `stream`), the C++ player's decoder on Android (`auto`, `mediacodec-hw`, `software`, ...) and the KTX2 streaming buffers. These apply to the players already on screen too. Each tile shows its clip, its variant and the decoder it ended up on.
+
+Tiles are 150 px wide, so the 1080p Manta is shrunk about 13 times. ASTC files have no mipmaps, so at that scale Manta looks pixelated in the ASTC tiles, while the video tiles look smoother; the frames themselves are clean. Turn on **Real Size** to draw every player at the clip's own size. The [alpha-video-gpu README](https://github.com/MediaCacheDev/alpha-video-gpu#drawing-size) explains why.
 
 ## Using the app
 
-- Tap a **+** button to spawn a player; each format has its own border colour.
+- Pick a clip and variant in a player's section of the asset panel, then tap its **+** button to spawn it. Each player has its own border colour. A greyed-out clip, variant or button has no file in `assets/media/` (see [Demo media](#demo-media)).
 - Drag a player by its ✋ grip, change its z-index with ▲/▼ or by typing a number, and close it with ✕. **Clear All** removes every player.
 - The bottom panel shows:
   - **FPS**: frames per second (green 55+, yellow 30+, red below 30);
@@ -31,17 +39,74 @@ The settings panels choose the clip (a 400×400 glow or a 1080p manta, single-st
 
 ```sh
 npm install
-npm run fetch-media              # downloads the clips into assets/media/ from the media-v1 release
-bundle install && cd ios && bundle exec pod install && cd ..
+npm run media                    # downloads the 4 source clips, then makes the other variants (see Demo media)
+
+# iOS only
+bundle install                   # installs the CocoaPods version pinned in Gemfile
+cd ios && bundle exec pod install && cd ..
 ```
 
-Until the packages are on npm, `package.json` installs them from tarballs packed in the sibling repos (`../webmvp9alphaplayer/...`, `../ktx2player/...`, `../react-native-apng-avif/...`).
+`bundle` is Ruby's Bundler. CocoaPods is a Ruby gem, and the `Gemfile` (from the React Native template) pins versions known to work with React Native, so `bundle exec pod install` runs that CocoaPods rather than whichever is installed globally. If your global CocoaPods works, `cd ios && pod install` does the same. Android needs neither.
+
+`package.json` installs the players from tarballs packed in the sibling repos (`../webmvp9alphaplayer/...`, `../ktx2player/...`, `../react-native-apng-avif/...`), so the app runs against their working copies rather than the npm releases.
 
 ```sh
 npm start                        # Metro
 npm run android                  # or: npm run ios
 npm run web                      # webpack dev server; npm run build:web for a production build
 ```
+
+## Demo media
+
+The clips live in `assets/media/`, which isn't committed. Everything in it is bundled into the APK, the iOS app and the web build. Only four source files are downloaded; the other variants are made from them on your machine.
+
+```sh
+npm run media                    # both steps below
+npm run fetch-media              # downloads the sources from the media-v1 release, checking each SHA-256
+npm run make-media               # makes the variants from the sources
+```
+
+**Downloaded** (listed in `media.manifest.json`, about 110 MB):
+
+| File | What it is |
+|---|---|
+| `test_webm.webm` | Glow, VP9 with the alpha inside the stream |
+| `manta_1080p_yuva.webm` | Manta, VP9 with the alpha inside the stream |
+| `test_stream.ktx2` | Glow, ASTC 4x4, zstd |
+| `manta_stream.ktx2` | Manta, ASTC 4x4, zstd |
+
+**Made by `make-media`** (about 2 minutes 40 seconds on an M4 Pro; most of it is the Manta APNG):
+
+| Variant | Glow | Manta | Made from |
+|---|---|---|---|
+| D-VP9 | `test_webm_dual.webm`, 0.6 MB | `manta_dual.webm`, 5.2 MB | the VP9 WebM: colour in one VP9 track, the alpha as a grey 4:2:0 VP9 track (`libvpx-vp9`, CRF 30) |
+| D-AV1 | `test_webm_dual_av1.webm`, 0.5 MB | `manta_dual_av1.webm`, 4.7 MB | the same, in AV1 (`libsvtav1`, CRF 32, preset 8) |
+| APNG | `test_apng.apng`, 20 MB | `manta_apng.apng`, 128 MB | the VP9 WebM's decoded frames, lossless |
+| AVIF | `test_avif.avif`, 1.5 MB | `manta_avif.avif`, 7.9 MB | the VP9 WebM's decoded frames (`avifenc`, speed 6, 4:4:4) |
+| Raw | `test_uncompressed.ktx2`, 29 MB | `manta_uncompressed.ktx2`, 879 MB | the zstd KTX2, decompressed: the same ASTC blocks, header and keys |
+
+Every variant comes from the same source, so the players show the same pictures. The WebMs keep their source's frame rate and colour tags (Manta is BT.709). `make-media` remakes a file only when its source or its recipe has changed (`assets/media/.generated.json` records both); `--force` remakes everything.
+
+**Tools** (`make-media` checks them first and names what's missing):
+
+- ffmpeg with libvpx (VP9) and libsvtav1 (AV1). It decodes with libvpx because ffmpeg's own VP9 decoder drops the alpha;
+- `avifenc` from libavif;
+- `zstd`;
+- Node 18 or later.
+
+On macOS: `brew install ffmpeg libavif zstd`. Homebrew's ffmpeg includes libvpx and SVT-AV1.
+
+**Leaving files out.** The app greys out any clip, variant or spawn button whose file isn't in `assets/media/`, so you can leave out the large ones and keep a smaller app:
+
+```sh
+npm run make-media -- --skip manta_uncompressed           # without the 879 MB Raw Manta
+npm run make-media -- --skip 'manta_(uncompressed|apng)'  # and the 128 MB Manta APNG
+npm run make-media -- --only manta_dual                   # make just these
+```
+
+`--skip` takes a regex on the file name, and deletes a matching file that's already there. A variant whose source wasn't downloaded is left out the same way. Which files are present is read from `src/media.generated.json`, which Metro and webpack rewrite when they start (and `npm install`, `fetch-media` and `make-media` after them). After adding or deleting files by hand, restart Metro, or run `node scripts/media-index.js` while it's running.
+
+With everything in, `assets/media/` is about 1.1 GB, most of it Raw Manta; leave that out for an emulator with little storage.
 
 ## Tests
 
@@ -53,7 +118,7 @@ The app is also the test bench for the players on Android and iOS: `testing/` dr
 | `npm run testcards` | Generates the test cards and their fixtures in `testing/build/testcard` | ffmpeg with libvpx and libsvtav1, and [alpha-video-gpu-encoder](https://github.com/MediaCacheDev/alpha-video-gpu-encoder) next to this repo (or `TEXENC=path/to/texenc.js`) |
 | `npm run testcards:reference` | The fixtures through FFmpeg's and KTX-Software's decoders (they must pass, or the cards are wrong), and through models of the players' maths | the cards |
 | `npm run test:pixels -- --platform <p>` | Every player on every card: frame codes after seeks, alpha, colour, position | the cards, and the Release build on a booted emulator or simulator |
-| `npm run test:streaming -- --platform <p>` | Range requests, seeks, storage, headers and data sources, against local servers | the Release build, and [alpha-video-source](https://github.com/MediaCacheDev/alpha-video-source) next to this repo |
+| `npm run test:streaming -- --platform <p>` | Range requests, seeks, storage, headers and data sources, against local servers | the Release build, `test_stream.ktx2` in `assets/media/`, and [alpha-video-source](https://github.com/MediaCacheDev/alpha-video-source) and [alpha-video-gpu-encoder](https://github.com/MediaCacheDev/alpha-video-gpu-encoder) next to this repo |
 
 ### The Release build
 
@@ -112,7 +177,7 @@ npm run test:streaming -- --platform ios --player gpu     # react-native-alpha-v
 npm run test:streaming -- --platform android --only 'replay'   # by case name
 ```
 
-`test:streaming` plays 10 s clips made with ffmpeg (`testing/build/streaming`) from local servers (alpha-video-source's `range-server.mjs`, a sibling checkout), through `alphavideotest://streamtest?…` links; the screen reports its events back over HTTP (`adb reverse` on Android). For each player it checks range requests and a seek that jumps to the Cues or a seek point, a server without range support, replay from the disk store (also after restarting the app) and the memory store with no requests, `source.headers`, and an app data source: Media3's `DefaultHttpDataSource` on Android (through `alpha-video-media3` and `alpha-video-gpu-media3`), and the URLSession one in `AppDelegate.swift` on iOS. alpha-video also checks preload in one request, and on Android the C++ core's range requests. KTX2 cases are named `ktx2 …`. The Android release build allows cleartext HTTP to `127.0.0.1` only.
+`test:streaming` plays clips it makes itself (`testing/build/streaming`: 10 s WebMs with ffmpeg, and KTX2 with seek points and uncompressed with texenc), plus the demo's `test_stream.ktx2`, from local servers (alpha-video-source's `range-server.mjs`, a sibling checkout), through `alphavideotest://streamtest?…` links; the screen reports its events back over HTTP (`adb reverse` on Android). For each player it checks range requests and a seek that jumps to the Cues or a seek point, a server without range support, replay from the disk store (also after restarting the app) and the memory store with no requests, `source.headers`, and an app data source: Media3's `DefaultHttpDataSource` on Android (through `alpha-video-media3` and `alpha-video-gpu-media3`), and the URLSession one in `AppDelegate.swift` on iOS. alpha-video also checks preload in one request, and on Android the C++ core's range requests. KTX2 cases are named `ktx2 …`. The Android release build allows cleartext HTTP to `127.0.0.1` only.
 
 ### Everything, on both platforms
 

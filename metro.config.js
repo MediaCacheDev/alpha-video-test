@@ -1,4 +1,7 @@
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
+const { writeMediaIndex } = require('./scripts/media-index');
+
+writeMediaIndex();
 
 /**
  * Metro configuration

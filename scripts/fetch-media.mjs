@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Downloads the demo media listed in media.manifest.json into assets/media/, from the GitHub
-// Release named there. Files already present with the right SHA-256 are left alone.
+// Release named there. Files already present with the right SHA-256 are left alone. These are the
+// sources: `npm run make-media` makes the other variants from them.
 //
 //   npm run fetch-media
 
@@ -11,6 +12,7 @@ import path from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
+import mediaIndex from './media-index.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const mediaDir = path.join(root, 'assets', 'media');
@@ -56,4 +58,5 @@ for (const entry of manifest.files) {
   console.log(`  ↓ ${entry.name} (${(entry.size / 1e6).toFixed(1)} MB)`);
   await download(entry, file);
 }
-console.log(`✅ ${manifest.files.length} files in ${path.relative(root, mediaDir)}`);
+mediaIndex.writeMediaIndex();
+console.log(`✅ ${manifest.files.length} files in ${path.relative(root, mediaDir)}. Next: npm run make-media`);

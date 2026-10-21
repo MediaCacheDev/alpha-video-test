@@ -1,12 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { PerformanceMetrics } from '../hooks/usePerformanceMetrics';
+import { PLAYERS, type PlayerId } from '../catalog';
 
 interface PerformancePanelProps {
   metrics: PerformanceMetrics;
+  /** Players on screen, by player */
+  counts: Partial<Record<PlayerId, number>>;
 }
 
-export const PerformancePanel: React.FC<PerformancePanelProps> = ({ metrics }) => {
+export const PerformancePanel: React.FC<PerformancePanelProps> = ({ metrics, counts }) => {
   const getFpsColor = (fps: number) => {
     if (fps >= 55) return '#4CAF50';
     if (fps >= 30) return '#FFC107';
@@ -71,49 +74,18 @@ export const PerformancePanel: React.FC<PerformancePanelProps> = ({ metrics }) =
         </View>
       </View>
 
-      {/* Instance Count Row 1 - KTX2 variants */}
-      <View style={styles.row}>
-        <View style={[styles.countBadge, { backgroundColor: '#4CAF50' }]}>
-          <Text style={styles.countText}>
-            ASTC: {metrics.instanceCount.ktx2}
-          </Text>
-        </View>
-        <View style={[styles.countBadge, { backgroundColor: '#8BC34A' }]}>
-          <Text style={styles.countText}>
-            ZST: {metrics.instanceCount.ktx2zst}
-          </Text>
-        </View>
-        <View style={[styles.countBadge, { backgroundColor: '#CDDC39' }]}>
-          <Text style={[styles.countText, { color: '#333' }]}>
-            Raw: {metrics.instanceCount.ktx2raw}
-          </Text>
-        </View>
+      {/* Players running, in their spawn buttons' colours */}
+      <View style={[styles.row, styles.badges]}>
+        {PLAYERS.map(player => (
+          <View key={player.id} style={[styles.countBadge, { backgroundColor: player.color }]}>
+            <Text style={styles.countText}>
+              {player.tag}: {counts[player.id] ?? 0}
+            </Text>
+          </View>
+        ))}
         <View style={[styles.countBadge, { backgroundColor: '#607D8B' }]}>
           <Text style={styles.countText}>
-            Total: {metrics.instanceCount.ktx2 + metrics.instanceCount.ktx2zst + metrics.instanceCount.ktx2raw + metrics.instanceCount.webm + metrics.instanceCount.webmcpp + metrics.instanceCount.apng + metrics.instanceCount.avif}
-          </Text>
-        </View>
-      </View>
-      {/* Instance Count Row 2 - Other formats */}
-      <View style={styles.row}>
-        <View style={[styles.countBadge, { backgroundColor: '#2196F3' }]}>
-          <Text style={styles.countText}>
-            WebM: {metrics.instanceCount.webm}
-          </Text>
-        </View>
-        <View style={[styles.countBadge, { backgroundColor: '#00BCD4' }]}>
-          <Text style={styles.countText}>
-            C++: {metrics.instanceCount.webmcpp}
-          </Text>
-        </View>
-        <View style={[styles.countBadge, { backgroundColor: '#9C27B0' }]}>
-          <Text style={styles.countText}>
-            APNG: {metrics.instanceCount.apng}
-          </Text>
-        </View>
-        <View style={[styles.countBadge, { backgroundColor: '#FF5722' }]}>
-          <Text style={styles.countText}>
-            AVIF: {metrics.instanceCount.avif}
+            Total: {Object.values(counts).reduce((a, b) => a + (b ?? 0), 0)}
           </Text>
         </View>
       </View>
@@ -155,6 +127,11 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontVariant: ['tabular-nums'],
   },
+  badges: {
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 4,
+  },
   countBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -168,7 +145,7 @@ const styles = StyleSheet.create({
   },
   gpuRow: {
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   gpuName: {
     color: '#FF9800',

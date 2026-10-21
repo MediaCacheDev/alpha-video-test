@@ -1,99 +1,47 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { PLAYERS, PLAYER_BY_ID, fileFor, type PlayerId, type Selection } from '../catalog';
 
 interface SpawnControlsProps {
-  onSpawnKTX2: () => void;
-  onSpawnKTX2Uncompressed?: () => void;
-  onSpawnWebM: () => void;
-  onSpawnWebMCpp?: () => void;
+  /** What the asset panel has selected for each player; a button without a file is greyed out */
+  selections: Record<PlayerId, Selection>;
+  /** Spawns a player with what the asset panel has selected for it */
+  onSpawn: (player: PlayerId) => void;
   onSpawnExoVp9Alpha?: () => void;
-  onSpawnApng?: () => void;
-  onSpawnAvif?: () => void;
   onClearAll: () => void;
 }
 
 export const SpawnControls: React.FC<SpawnControlsProps> = ({
-  onSpawnKTX2,
-  onSpawnKTX2Uncompressed,
-  onSpawnWebM,
-  onSpawnWebMCpp,
+  selections,
+  onSpawn,
   onSpawnExoVp9Alpha,
-  onSpawnApng,
-  onSpawnAvif,
   onClearAll,
 }) => {
+  const canSpawn = (player: PlayerId) => !!fileFor(PLAYER_BY_ID[player], selections[player]);
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={[styles.button, styles.ktx2Button]}
-        onPress={onSpawnKTX2}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.buttonText}>+ ASTC</Text>
-        <Text style={styles.subText}>KTX2 Zstd</Text>
-      </TouchableOpacity>
-
-      {onSpawnKTX2Uncompressed && (
+      {PLAYERS.map(player => (
         <TouchableOpacity
-          style={[styles.button, styles.ktx2UncompressedButton]}
-          onPress={onSpawnKTX2Uncompressed}
+          key={player.id}
+          style={[styles.button, { backgroundColor: player.color }, !canSpawn(player.id) && styles.disabled]}
+          onPress={() => onSpawn(player.id)}
+          disabled={!canSpawn(player.id)}
           activeOpacity={0.7}
         >
-          <Text style={styles.buttonText}>+ Raw</Text>
-          <Text style={styles.subText}>Uncompressed</Text>
+          <Text style={styles.buttonText}>{player.button}</Text>
+          <Text style={styles.subText}>{player.buttonDetail}</Text>
         </TouchableOpacity>
-      )}
-
-      <TouchableOpacity
-        style={[styles.button, styles.webmButton]}
-        onPress={onSpawnWebM}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.buttonText}>+ WebM</Text>
-        <Text style={styles.subText}>FFmpegKit</Text>
-      </TouchableOpacity>
-
-      {onSpawnWebMCpp && (
-        <TouchableOpacity
-          style={[styles.button, styles.webmCppButton]}
-          onPress={onSpawnWebMCpp}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.buttonText}>+ WebM</Text>
-          <Text style={styles.subText}>C++ FFmpeg</Text>
-        </TouchableOpacity>
-      )}
+      ))}
 
       {onSpawnExoVp9Alpha && (
         <TouchableOpacity
-          style={[styles.button, styles.exoVp9AlphaButton]}
+          style={[styles.button, styles.exoVp9AlphaButton, !canSpawn('ffmpegkit') && styles.disabled]}
           onPress={onSpawnExoVp9Alpha}
+          disabled={!canSpawn('ffmpegkit')}
           activeOpacity={0.7}
         >
           <Text style={styles.buttonText}>+ ExoPlayer</Text>
           <Text style={styles.subText}>VP9 Alpha</Text>
-        </TouchableOpacity>
-      )}
-
-      {onSpawnApng && (
-        <TouchableOpacity
-          style={[styles.button, styles.apngButton]}
-          onPress={onSpawnApng}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.buttonText}>+ APNG</Text>
-          <Text style={styles.subText}>Animated PNG</Text>
-        </TouchableOpacity>
-      )}
-
-      {onSpawnAvif && (
-        <TouchableOpacity
-          style={[styles.button, styles.avifButton]}
-          onPress={onSpawnAvif}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.buttonText}>+ AVIF</Text>
-          <Text style={styles.subText}>AV1 Image</Text>
         </TouchableOpacity>
       )}
 
@@ -126,28 +74,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 50,
   },
-  ktx2Button: {
-    backgroundColor: '#4CAF50',
-  },
-  ktx2UncompressedButton: {
-    backgroundColor: '#CDDC39',
-  },
-  webmButton: {
-    backgroundColor: '#2196F3',
-  },
-  webmCppButton: {
-    backgroundColor: '#00BCD4',
+  disabled: {
+    opacity: 0.3,
   },
   exoVp9AlphaButton: {
     backgroundColor: '#FF9800',
     borderWidth: 1,
     borderColor: '#FFB74D',
-  },
-  apngButton: {
-    backgroundColor: '#9C27B0',
-  },
-  avifButton: {
-    backgroundColor: '#FF5722',
   },
   clearButton: {
     backgroundColor: '#F44336',
