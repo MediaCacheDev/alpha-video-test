@@ -39,15 +39,24 @@ import { usePerformanceMetrics } from './src/hooks/usePerformanceMetrics';
 // import { KTX2PlayerView } from 'react-native-ktx2player';
 import { AlphaVideoGpuView } from 'react-native-alpha-video-gpu';
 import { FFmpegKitAlphaView } from 'react-native-alpha-video-ffmpegkit';
-import { AlphaVideoView, type Decoder } from 'react-native-alpha-video';
+import { AlphaVideoView, type Decoder, type WebDecoder } from 'react-native-alpha-video';
 import { AnimatedImageView } from 'react-native-apng-avif';
 
-// The C++ player's decoder choices; MediaCodec exists only on Android, so iOS always uses software
+// The C++ player's decoder choices: MediaCodec or the C++ core on Android, the browser's engines on
+// the web. iOS has no choice: it always decodes with the C++ core.
 const DECODER_OPTIONS: [Decoder, string][] = [
   ['auto', 'auto'],
   ['mediacodec', 'mc'],
   ['mediacodec-hw', 'mc-hw'],
   ['mediacodec-sw', 'mc-sw'],
+  ['software', 'software'],
+];
+const WEB_DECODER_OPTIONS: [WebDecoder, string][] = [
+  ['auto', 'auto'],
+  ['browser', 'browser'],
+  ['webcodecs', 'wc'],
+  ['webcodecs-hw', 'wc-hw'],
+  ['webcodecs-sw', 'wc-sw'],
   ['software', 'software'],
 ];
 
@@ -92,6 +101,7 @@ function AppContent() {
   // 'preload' | 'stream' | 'streamAndPreload'
   const [webmMode, setWebmMode] = useState<'preload' | 'stream' | 'streamAndPreload'>('stream');
   const [webmDecoder, setWebmDecoder] = useState<Decoder>('auto');
+  const [webmWebDecoder, setWebmWebDecoder] = useState<WebDecoder>('auto');
   const [useDecodeQueue, setUseDecodeQueue] = useState(true);
   const [streamCacheSize, setStreamCacheSize] = useState(30);
   const [streamPrefetchAhead, setStreamPrefetchAhead] = useState(15);
@@ -282,6 +292,7 @@ function AppContent() {
                 verbose={false}
                 mode={webmMode}
                 decoder={Platform.OS === 'android' ? webmDecoder : undefined}
+                webDecoder={webmWebDecoder}
                 useDecodeQueue={useDecodeQueue}
                 streamCacheSize={streamCacheSize}
                 streamPrefetchAhead={streamPrefetchAhead}
@@ -435,17 +446,13 @@ function AppContent() {
           {Platform.OS === 'android' && (
             <View style={styles.streamingRow}>
               <Text style={styles.streamingLabel}>Dec</Text>
-              <View style={styles.decoderButtons}>
-                {DECODER_OPTIONS.map(([value, label]) => (
-                  <TouchableOpacity
-                    key={value}
-                    style={[styles.decoderBtn, webmDecoder === value && styles.modeBtnActive]}
-                    onPress={() => setWebmDecoder(value)}
-                  >
-                    <Text style={[styles.modeBtnText, webmDecoder === value && styles.modeBtnTextActive]}>{label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <DecoderButtons options={DECODER_OPTIONS} value={webmDecoder} onChange={setWebmDecoder} />
+            </View>
+          )}
+          {Platform.OS === 'web' && (
+            <View style={styles.streamingRow}>
+              <Text style={styles.streamingLabel}>Dec</Text>
+              <DecoderButtons options={WEB_DECODER_OPTIONS} value={webmWebDecoder} onChange={setWebmWebDecoder} />
             </View>
           )}
           {Platform.OS === 'ios' && (
@@ -512,6 +519,28 @@ function AppContent() {
         />
         <PerformancePanel metrics={metrics} counts={counts} />
       </View>
+    </View>
+  );
+}
+
+interface DecoderButtonsProps<T extends string> {
+  options: [T, string][];
+  value: T;
+  onChange: (value: T) => void;
+}
+
+function DecoderButtons<T extends string>({ options, value, onChange }: DecoderButtonsProps<T>) {
+  return (
+    <View style={styles.decoderButtons}>
+      {options.map(([option, label]) => (
+        <TouchableOpacity
+          key={option}
+          style={[styles.decoderBtn, value === option && styles.modeBtnActive]}
+          onPress={() => onChange(option)}
+        >
+          <Text style={[styles.modeBtnText, value === option && styles.modeBtnTextActive]}>{label}</Text>
+        </TouchableOpacity>
+      ))}
     </View>
   );
 }
