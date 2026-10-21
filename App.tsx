@@ -403,19 +403,21 @@ function AppContent() {
           </View>
         </View>
 
-        {/* WebM FFmpegKit Settings Panel */}
-        <View style={[styles.streamingPanel, { borderColor: PLAYER_BY_ID.ffmpegkit.color }]}>
-          <Text style={styles.streamingTitle}>WebM FFmpegKit</Text>
-          <View style={styles.streamingRow}>
-            <Text style={styles.streamingLabel}>Stream</Text>
-            <Switch
-              value={webmKitStream}
-              onValueChange={setWebmKitStream}
-              trackColor={{ false: '#555', true: '#4a9' }}
-              thumbColor={webmKitStream ? '#fff' : '#888'}
-            />
+        {/* WebM FFmpegKit Settings Panel: on the web the player is a plain <video> with no modes */}
+        {Platform.OS !== 'web' && (
+          <View style={[styles.streamingPanel, { borderColor: PLAYER_BY_ID.ffmpegkit.color }]}>
+            <Text style={styles.streamingTitle}>WebM FFmpegKit</Text>
+            <View style={styles.streamingRow}>
+              <Text style={styles.streamingLabel}>Stream</Text>
+              <Switch
+                value={webmKitStream}
+                onValueChange={setWebmKitStream}
+                trackColor={{ false: '#555', true: '#4a9' }}
+                thumbColor={webmKitStream ? '#fff' : '#888'}
+              />
+            </View>
           </View>
-        </View>
+        )}
 
         {/* WebM C++ Settings Panel */}
         <View style={[styles.streamingPanel, { borderColor: PLAYER_BY_ID.cpp.color }]}>
