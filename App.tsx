@@ -420,29 +420,32 @@ function AppContent() {
         {/* WebM C++ Settings Panel */}
         <View style={[styles.streamingPanel, { borderColor: PLAYER_BY_ID.cpp.color }]}>
           <Text style={styles.streamingTitle}>WebM C++</Text>
-          <View style={styles.streamingRow}>
-            <Text style={styles.streamingLabel}>Mode</Text>
-            <View style={styles.modeButtons}>
-              <TouchableOpacity
-                style={[styles.modeBtn, webmMode === 'preload' && styles.modeBtnActive]}
-                onPress={() => setWebmMode('preload')}
-              >
-                <Text style={[styles.modeBtnText, webmMode === 'preload' && styles.modeBtnTextActive]}>Pre</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modeBtn, webmMode === 'stream' && styles.modeBtnActive]}
-                onPress={() => setWebmMode('stream')}
-              >
-                <Text style={[styles.modeBtnText, webmMode === 'stream' && styles.modeBtnTextActive]}>Str</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modeBtn, webmMode === 'streamAndPreload' && styles.modeBtnActive]}
-                onPress={() => setWebmMode('streamAndPreload')}
-              >
-                <Text style={[styles.modeBtnText, webmMode === 'streamAndPreload' && styles.modeBtnTextActive]}>Hyb</Text>
-              </TouchableOpacity>
+          {/* The web player has no playback modes, frame cache, prefetch setting or decode queue */}
+          {Platform.OS !== 'web' && (
+            <View style={styles.streamingRow}>
+              <Text style={styles.streamingLabel}>Mode</Text>
+              <View style={styles.modeButtons}>
+                <TouchableOpacity
+                  style={[styles.modeBtn, webmMode === 'preload' && styles.modeBtnActive]}
+                  onPress={() => setWebmMode('preload')}
+                >
+                  <Text style={[styles.modeBtnText, webmMode === 'preload' && styles.modeBtnTextActive]}>Pre</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modeBtn, webmMode === 'stream' && styles.modeBtnActive]}
+                  onPress={() => setWebmMode('stream')}
+                >
+                  <Text style={[styles.modeBtnText, webmMode === 'stream' && styles.modeBtnTextActive]}>Str</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modeBtn, webmMode === 'streamAndPreload' && styles.modeBtnActive]}
+                  onPress={() => setWebmMode('streamAndPreload')}
+                >
+                  <Text style={[styles.modeBtnText, webmMode === 'streamAndPreload' && styles.modeBtnTextActive]}>Hyb</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          )}
           {Platform.OS === 'android' && (
             <View style={styles.streamingRow}>
               <Text style={styles.streamingLabel}>Dec</Text>
@@ -463,49 +466,53 @@ function AppContent() {
               </View>
             </View>
           )}
-          <View style={styles.streamingRow}>
-            <Text style={styles.streamingLabel}>DecodeQ</Text>
-            <Switch
-              value={useDecodeQueue}
-              onValueChange={setUseDecodeQueue}
-              trackColor={{ false: '#555', true: '#4a9' }}
-              thumbColor={useDecodeQueue ? '#fff' : '#888'}
-            />
-          </View>
-          <View style={styles.streamingRow}>
-            <Text style={styles.streamingLabel}>Cache: {streamCacheSize}</Text>
-            <View style={styles.arrowButtons}>
-              <TouchableOpacity
-                style={styles.arrowBtn}
-                onPress={() => setStreamCacheSize(v => Math.max(1, v - 1))}
-              >
-                <Text style={styles.arrowText}>−</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.arrowBtn}
-                onPress={() => setStreamCacheSize(v => Math.min(200, v + 1))}
-              >
-                <Text style={styles.arrowText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View style={styles.streamingRow}>
-            <Text style={styles.streamingLabel}>Prefetch: {streamPrefetchAhead}</Text>
-            <View style={styles.arrowButtons}>
-              <TouchableOpacity
-                style={styles.arrowBtn}
-                onPress={() => setStreamPrefetchAhead(v => Math.max(1, v - 1))}
-              >
-                <Text style={styles.arrowText}>−</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.arrowBtn}
-                onPress={() => setStreamPrefetchAhead(v => Math.min(60, v + 1))}
-              >
-                <Text style={styles.arrowText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          {Platform.OS !== 'web' && (
+            <>
+              <View style={styles.streamingRow}>
+                <Text style={styles.streamingLabel}>DecodeQ</Text>
+                <Switch
+                  value={useDecodeQueue}
+                  onValueChange={setUseDecodeQueue}
+                  trackColor={{ false: '#555', true: '#4a9' }}
+                  thumbColor={useDecodeQueue ? '#fff' : '#888'}
+                />
+              </View>
+              <View style={styles.streamingRow}>
+                <Text style={styles.streamingLabel}>Cache: {streamCacheSize}</Text>
+                <View style={styles.arrowButtons}>
+                  <TouchableOpacity
+                    style={styles.arrowBtn}
+                    onPress={() => setStreamCacheSize(v => Math.max(1, v - 1))}
+                  >
+                    <Text style={styles.arrowText}>−</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.arrowBtn}
+                    onPress={() => setStreamCacheSize(v => Math.min(200, v + 1))}
+                  >
+                    <Text style={styles.arrowText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <View style={styles.streamingRow}>
+                <Text style={styles.streamingLabel}>Prefetch: {streamPrefetchAhead}</Text>
+                <View style={styles.arrowButtons}>
+                  <TouchableOpacity
+                    style={styles.arrowBtn}
+                    onPress={() => setStreamPrefetchAhead(v => Math.max(1, v - 1))}
+                  >
+                    <Text style={styles.arrowText}>−</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.arrowBtn}
+                    onPress={() => setStreamPrefetchAhead(v => Math.min(60, v + 1))}
+                  >
+                    <Text style={styles.arrowText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </>
+          )}
         </View>
       </View>}
 
