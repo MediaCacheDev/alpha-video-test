@@ -12,7 +12,7 @@ Each button at the bottom is one player:
 | **+ WebM** (FFmpegKit) | [alpha-video-ffmpegkit](https://github.com/MediaCacheDev/alpha-video-ffmpegkit) | VP9 alpha WebM, single stream only. The first attempt, kept as a reference |
 | **+ WebM** (C++) | [alpha-video](https://github.com/MediaCacheDev/alpha-video) | VP8 or VP9 alpha WebM, and dual-stream VP8/VP9/AV1. Its C++ core decodes with libvpx and dav1d; on Android, MediaCodec decodes in hardware where it can |
 | **+ APNG**, **+ AVIF** | [react-native-apng-avif](https://github.com/MediaCacheDev/react-native-apng-avif) | Animated PNG and animated AVIF (one package, two buttons) |
-| **+ ExoPlayer** (Android) | [exoplayer_alpha](https://github.com/danielkpl2/media/tree/feature/vp9-alpha-decoder), a Media3 fork, built from source (see [Setup](#setup)); this app's view is `android/app/src/main/java/dev/mediacache/alphavideotest/exoplayer/` | VP9 alpha WebM, single stream only, in ExoPlayer: its data sources and the fork's `MatroskaExtractor`, which keeps the alpha upstream drops, then FFmpeg's libvpx-vp9. A minimal demo, not published |
+| **+ ExoPlayer** (Android) | [exoplayer_alpha](https://github.com/MediaCacheDev/exoplayer-vp9-alpha/tree/feature/vp9-alpha-decoder), a Media3 fork, built from source (see [Setup](#setup)); this app's view is `android/app/src/main/java/dev/mediacache/alphavideotest/exoplayer/` | VP9 alpha WebM, single stream only, in ExoPlayer: its data sources and the fork's `MatroskaExtractor`, which keeps the alpha upstream drops, then FFmpeg's libvpx-vp9. A minimal demo, not published |
 
 The KTX2 files are made with [alpha-video-gpu-encoder](https://github.com/MediaCacheDev/alpha-video-gpu-encoder). [alpha-video](https://github.com/MediaCacheDev/alpha-video#alpha-video-or-alpha-video-gpu) explains when to pick a codec and when ASTC.
 
@@ -50,7 +50,7 @@ cd ios && bundle exec pod install && cd ..
 
 `package.json` installs the players from tarballs packed in the sibling repos (`../webmvp9alphaplayer/...`, `../ktx2player/...`, `../react-native-apng-avif/...`), so the app runs against their working copies rather than the npm releases.
 
-The Android build also needs the Media3 fork for the ExoPlayer button: `android/settings.gradle` includes its modules from `../exoplayer_alpha/media` (branch `feature/vp9-alpha-decoder`), and every Media3 class in the app comes from there. Build its FFmpeg and libvpx once first, as [its module's README](https://github.com/danielkpl2/media/blob/feature/vp9-alpha-decoder/libraries/decoder_vp9_alpha/README.md) describes (`libraries/decoder_vp9_alpha/src/main/jni/build_ffmpeg.sh`).
+The Android build also needs the Media3 fork for the ExoPlayer button: `android/settings.gradle` includes its modules from `../exoplayer_alpha/media` (branch `feature/vp9-alpha-decoder`), and every Media3 class in the app comes from there. Build its FFmpeg and libvpx once first, as [its module's README](https://github.com/MediaCacheDev/exoplayer-vp9-alpha/blob/feature/vp9-alpha-decoder/libraries/decoder_vp9_alpha/README.md) describes (`libraries/decoder_vp9_alpha/src/main/jni/build_ffmpeg.sh`).
 
 ```sh
 npm start                        # Metro
