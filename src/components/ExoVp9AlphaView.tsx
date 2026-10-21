@@ -27,9 +27,9 @@ export interface ExoVp9AlphaViewProps extends ViewProps {
    */
   paused?: boolean;
   /**
-   * Callback when video is loaded
+   * Callback when the player is ready: the video's size, and the decoder ("libvpx-vp9 (FFmpeg 6.1)")
    */
-  onLoad?: (event: { nativeEvent: { totalFrames: number; width: number; height: number } }) => void;
+  onLoad?: (event: { nativeEvent: { width: number; height: number; decoder: string } }) => void;
   /**
    * Callback when an error occurs
    */
@@ -43,16 +43,14 @@ const NativeExoVp9AlphaView =
     : null;
 
 /**
- * ExoPlayer-based VP9 Alpha Video View
+ * ExoPlayer VP9 Alpha Video View
  *
- * This component renders VP9 WebM videos with alpha transparency using
- * an ExoPlayer-based decoder. It's designed to match the visual output
- * of the control WebMAlphaView (C++ player).
+ * Plays single-stream VP9 alpha WebM with ExoPlayer and the exoplayer_alpha fork's
+ * VP9-alpha renderer (FFmpeg's libvpx-vp9). Android only.
  *
- * Features:
- * - VP9 alpha transparency support via FFmpeg libvpx-vp9
- * - YUVA to RGBA conversion via GL shaders
- * - TextureView-based rendering (proper React Native integration)
+ * - ExoPlayer opens the source: asset://, file://, content:// or http(s)://
+ * - Its MatroskaExtractor demuxes the WebM, and frames are decoded a few ahead of playback
+ * - YUVA to RGBA conversion via GL shaders, in a TextureView
  * - Looping playback
  *
  * @example

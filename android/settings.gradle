@@ -13,4 +13,22 @@ dependencyResolutionManagement {
 extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
 rootProject.name = 'AlphaVideoTest'
 include ':app'
+
+// The ExoPlayer button's player: Media3 from the exoplayer_alpha fork, built from source. Only the
+// modules it uses; see the fork's libraries/decoder_vp9_alpha/README.md.
+def media3Fork = file('../../exoplayer_alpha/media')
+gradle.ext.androidxMediaSettingsDir = media3Fork.canonicalPath
+gradle.ext.androidxMediaModulePrefix = 'media3-'
+['common', 'container', 'database', 'datasource', 'decoder', 'extractor', 'exoplayer', 'decoder_vp9_alpha'].each { dir ->
+    def name = ':media3-lib-' + dir.replace('_', '-')
+    include name
+    project(name).projectDir = new File(media3Fork, "libraries/$dir")
+}
+// Their testImplementation names these; the app never builds their tests, so empty projects do
+['test-utils', 'test-utils-robolectric', 'test-data'].each { stub ->
+    def dir = new File(rootDir, "build/media3-test-stubs/$stub")
+    dir.mkdirs()
+    include ":media3-$stub"
+    project(":media3-$stub").projectDir = dir
+}
 includeBuild('../node_modules/@react-native/gradle-plugin')

@@ -305,6 +305,7 @@ function AppContent() {
                 source={{ uri: instance.uri }}
                 autoPlay
                 loop
+                onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
               />
             );
             if (instance.player === 'apng') return (

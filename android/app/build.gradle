@@ -90,19 +90,9 @@ android {
             abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
         }
     }
-    
-    // NOTE: CMake build disabled - it interferes with React Native's native module generation.
-    // The libexovp9alpha.so is built separately and included in jniLibs.
-    // externalNativeBuild {
-    //     cmake {
-    //         path 'src/main/cpp/CMakeLists.txt'
-    //         version '3.22.1'
-    //     }
-    // }
-    
+
     sourceSets {
         main {
-            jniLibs.srcDirs = ['src/main/jniLibs']
             // The demo media, read in place as asset://media/...
             assets.srcDirs += ['../../assets']
             // alpha-video-media3 and alpha-video-gpu-media3 from the player repos, for the stream
@@ -152,16 +142,8 @@ dependencies {
         implementation jscFlavor
     }
     
-    // ExoPlayer dependencies (Media3)
-    def media3_version = "1.5.0"
-    implementation("androidx.media3:media3-exoplayer:$media3_version")
-    implementation("androidx.media3:media3-exoplayer-dash:$media3_version")
-    implementation("androidx.media3:media3-exoplayer-hls:$media3_version")
-    implementation("androidx.media3:media3-exoplayer-smoothstreaming:$media3_version")
-    implementation("androidx.media3:media3-datasource:$media3_version")
-    implementation("androidx.media3:media3-common:$media3_version")
-    implementation("androidx.media3:media3-decoder:$media3_version")
-    
-    // Our custom VP9 alpha decoder module (local AAR)
-    implementation files('libs/lib-decoder-vp9-alpha-release.aar')
+    // Media3 from the exoplayer_alpha fork (settings.gradle): ExoPlayer with the VP9-alpha
+    // decoder for the ExoPlayer button, and the data sources for the stream tests
+    implementation project(':media3-lib-exoplayer')
+    implementation project(':media3-lib-decoder-vp9-alpha')
 }
