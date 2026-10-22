@@ -95,11 +95,10 @@ android {
         main {
             // The demo media, read in place as asset://media/...
             assets.srcDirs += ['../../assets']
-            // With react-native-range-source installed: range-source-media3 from its repository,
-            // which the npm package doesn't carry, and the stream tests' data sources
+            // With react-native-range-source installed: the stream tests' data sources
             // (src/rangesource). Without it, the players use their basic input.
             if (rootProject.findProject(':react-native-range-source')) {
-                java.srcDirs += ['src/rangesource/java', '../../../range-source/android/media3/src/main/java']
+                java.srcDirs += ['src/rangesource/java']
             }
         }
     }
@@ -148,4 +147,12 @@ dependencies {
     // decoder for the ExoPlayer button, and the data sources for the stream tests
     implementation project(':media3-lib-exoplayer')
     implementation project(':media3-lib-decoder-vp9-alpha')
+
+    // The Media3 adapter for the stream tests' data sources. range-source itself comes from
+    // react-native-range-source, which compiles the same classes and library
+    if (rootProject.findProject(':react-native-range-source')) {
+        implementation('dev.mediacache:range-source-media3:1.0.0') {
+            exclude group: 'dev.mediacache', module: 'range-source'
+        }
+    }
 }

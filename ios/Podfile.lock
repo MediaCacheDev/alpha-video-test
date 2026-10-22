@@ -3143,7 +3143,7 @@ SPEC CHECKSUMS:
   react-native-alpha-video-ffmpegkit: e04ee183e12de0000e20b5f51be0a260fc8a1424
   react-native-alpha-video-gpu: a1ccdf094ce071656a033d5315f2d8ef63986d2d
   react-native-apng-avif: 7945c7d8b5737cc61777cd1fa2a2de42cef2c817
-  react-native-range-source: 67023499dc62434fe1789db66620dfc0101a66ff
+  react-native-range-source: 997b962b83055eaaf4f0a8f3d60ee869f1f93b03
   react-native-safe-area-context: c00143b4823773bba23f2f19f85663ae89ceb460
   react-native-skia: b60d0b9d9aea330baef956b7f015d0af2b42076d
   React-NativeModulesApple: a2c3d2cbec893956a5b3e4060322db2984fff75b
