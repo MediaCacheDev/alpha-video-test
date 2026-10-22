@@ -13,7 +13,7 @@ export interface StreamTestCase {
   /** The driver's event server: the screen requests `<report>/event?id=…&event=…&detail=…`. */
   report: string;
   storage?: 'auto' | 'disk' | 'memory' | 'none';
-  /** WebM only */
+  /** For KTX2 only 'preload', as stream={false} */
   mode?: 'stream' | 'preload' | 'streamAndPreload';
   /** WebM only */
   decoder?: string;

@@ -11,6 +11,10 @@
  * in AppDelegate.swift on iOS). `--player cpp` keeps the WebM cases (react-native-alpha-video),
  * `--player gpu` the KTX2 ones (react-native-alpha-video-gpu, named "ktx2 …"). Needs the demo's
  * release build installed and the emulator or simulator booted. Exits 1 if any case fails.
+ *
+ * Without react-native-range-source in node_modules (and so in that build), the same cases check
+ * the players' basic input instead: one download from the start per play, again on a replay, and
+ * a data source failing with the add-on's name.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -37,6 +41,8 @@ const { values: args } = parseArgs({
 if (!args.platform) throw new Error('--platform android|ios is required');
 if (args.player && !['cpp', 'gpu'].includes(args.player)) throw new Error('--player is cpp or gpu');
 const only = args.only ? new RegExp(args.only) : null;
+const addOn = fs.existsSync(path.join(demoRoot, 'node_modules/react-native-range-source'));
+console.log(addOn ? 'with react-native-range-source' : 'without react-native-range-source: the basic input');
 
 const LOAD_TIMEOUT_MS = 20_000;
 /** A 10 s clip played once, plus its load. */
@@ -195,13 +201,20 @@ async function seekCase(server: RangeServer, clip: Clip, props: Props, expectJum
   const size = clip.data.length;
   if (requests.length === 0) throw new Error('no requests');
   const [from, to] = clip.seekRange;
-  if (expectJump && !requests.some((r) => rangeStart(r.range) > size * from && rangeStart(r.range) < size * to)) {
+  if (!addOn) {
+    if (requests.length !== 1 || rangeStart(requests[0].range) !== 0) {
+      throw new Error(`expected one download from the start: ${describe(requests, size)}`);
+    }
+  } else if (expectJump && !requests.some((r) => rangeStart(r.range) > size * from && rangeStart(r.range) < size * to)) {
     throw new Error(`no request from ${from * 100}% to ${to * 100}%: ${describe(requests, size)}`);
   }
   return { load, requests, detail: `${load.detail}; ${requests.length} requests at ${describe(requests, size)}` };
 }
 
-/** Plays a clip through once, then again (after restarting the app): the second play must make no requests. */
+/**
+ * Plays a clip through once, then again (after restarting the app): the second play must make no
+ * requests, or without the add-on download it once more.
+ */
 async function replayCase(clip: Clip, storage: 'disk' | 'memory', restart = false) {
   const clipPath = serveClip(ranged, clip);
   const first = open(ranged, clipPath, { storage, loop: false });
@@ -214,8 +227,9 @@ async function replayCase(clip: Clip, storage: 'disk' | 'memory', restart = fals
   await sleep(SEEK_SETTLE_MS);
   again.assertNoError();
   const extra = ranged.requests.filter((r) => r.path === clipPath).length - firstCount;
-  if (extra !== 0) throw new Error(`the replay made ${extra} requests`);
-  return `first play ${firstCount} requests, replay and seek 0`;
+  const expected = addOn ? 0 : 1;
+  if (extra !== expected) throw new Error(`the replay made ${extra} requests, expected ${expected}`);
+  return `first play ${firstCount} requests, replay and seek ${extra}`;
 }
 
 const cases: [string, () => Promise<string>][] = [
@@ -241,6 +255,7 @@ const cases: [string, () => Promise<string>][] = [
   ['ktx2 ranges, seek table', async () => (await seekCase(ranged, clips.ktx2Seek, {}, true)).detail],
   ['ktx2 ranges, one zstd stream', async () => (await seekCase(ranged, clips.ktx2Stream, {}, false)).detail],
   ['ktx2 uncompressed, read whole', async () => (await seekCase(ranged, clips.ktx2Uncompressed, {}, false)).detail],
+  ['ktx2 preload', async () => (await seekCase(ranged, clips.ktx2Seek, { mode: 'preload' }, false)).detail],
   ['ktx2 no ranges', async () => {
     const { requests, detail } = await seekCase(unranged, clips.ktx2Seek, {}, false);
     if (requests.some((r) => !r.range)) throw new Error('a request without Range');
@@ -272,6 +287,13 @@ async function missingHeadersCase(clip: Clip) {
 }
 
 async function dataSourceCase(clip: Clip) {
+  if (!addOn) {
+    const c = open(ranged, serveClip(ranged, clip), { dataSource: dataSource.name, storage: 'auto' });
+    const error = await c.waitFor('error', LOAD_TIMEOUT_MS);
+    if (!error.detail.includes('needs the range-source add-on')) throw new Error(`error: ${error.detail}`);
+    if (c.requests().length) throw new Error(`${c.requests().length} requests`);
+    return error.detail;
+  }
   const { requests, detail } = await seekCase(ranged, clip, { dataSource: dataSource.name, storage: 'auto' }, true);
   const agents = new Set(requests.map((r) => r.headers['user-agent']));
   if (agents.size !== 1 || !agents.has(dataSource.userAgent)) throw new Error(`user agents: ${[...agents].join(', ')}`);

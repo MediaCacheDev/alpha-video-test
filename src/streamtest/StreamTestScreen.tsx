@@ -38,6 +38,7 @@ export function StreamTestScreen({ testCase: c }: { testCase: StreamTestCase }) 
           source={source}
           cacheKey={c.cacheKey}
           storage={c.storage}
+          stream={c.mode === 'preload' ? false : undefined}
           loop={c.loop ?? true}
           style={styles.player}
           onLoad={(e) => onLoad(`${e.nativeEvent.frameCount} frames`)}
