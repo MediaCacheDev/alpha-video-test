@@ -48,7 +48,7 @@ cd ios && bundle exec pod install && cd ..
 
 `bundle` is Ruby's Bundler. CocoaPods is a Ruby gem, and the `Gemfile` (from the React Native template) pins versions known to work with React Native, so `bundle exec pod install` runs that CocoaPods rather than whichever is installed globally. If your global CocoaPods works, `cd ios && pod install` does the same. Android needs neither.
 
-`package.json` installs the players from tarballs packed in the sibling repos (`../webmvp9alphaplayer/...`, `../ktx2player/...`, `../react-native-apng-avif/...`), so the app runs against their working copies rather than the npm releases.
+`package.json` installs the players from tarballs packed in the sibling repos (`../webmvp9alphaplayer/...`, `../ktx2player/...`, `../react-native-apng-avif/...`, and `../range-source/web/range-source-web-1.0.0.tgz`, which both web players depend on), so the app runs against their working copies rather than the npm releases.
 
 The Android build also needs the Media3 fork for the ExoPlayer button: `android/settings.gradle` includes its modules from `../exoplayer_alpha/media` (branch `feature/vp9-alpha-decoder`), and every Media3 class in the app comes from there. Build its FFmpeg and libvpx once first, as [its module's README](https://github.com/MediaCacheDev/exoplayer-vp9-alpha/blob/feature/vp9-alpha-decoder/libraries/decoder_vp9_alpha/README.md) describes (`libraries/decoder_vp9_alpha/src/main/jni/build_ffmpeg.sh`).
 
@@ -120,7 +120,7 @@ The app is also the test bench for the players on Android and iOS: `testing/` dr
 | `npm run testcards` | Generates the test cards and their fixtures in `testing/build/testcard` | ffmpeg with libvpx and libsvtav1, and [alpha-video-gpu-encoder](https://github.com/MediaCacheDev/alpha-video-gpu-encoder) next to this repo (or `TEXENC=path/to/texenc.js`) |
 | `npm run testcards:reference` | The fixtures through FFmpeg's and KTX-Software's decoders (they must pass, or the cards are wrong), and through models of the players' maths | the cards |
 | `npm run test:pixels -- --platform <p>` | Every player on every card: frame codes after seeks, alpha, colour, position | the cards, and the Release build on a booted emulator or simulator |
-| `npm run test:streaming -- --platform <p>` | Range requests, seeks, storage, headers and data sources, against local servers | the Release build, `test_stream.ktx2` in `assets/media/`, and [alpha-video-source](https://github.com/MediaCacheDev/alpha-video-source) and [alpha-video-gpu-encoder](https://github.com/MediaCacheDev/alpha-video-gpu-encoder) next to this repo |
+| `npm run test:streaming -- --platform <p>` | Range requests, seeks, storage, headers and data sources, against local servers | the Release build, `test_stream.ktx2` in `assets/media/`, and [range-source](https://github.com/MediaCacheDev/range-source) and [alpha-video-gpu-encoder](https://github.com/MediaCacheDev/alpha-video-gpu-encoder) next to this repo |
 
 ### The Release build
 
@@ -179,7 +179,7 @@ npm run test:streaming -- --platform ios --player gpu     # react-native-alpha-v
 npm run test:streaming -- --platform android --only 'replay'   # by case name
 ```
 
-`test:streaming` plays clips it makes itself (`testing/build/streaming`: 10 s WebMs with ffmpeg, and KTX2 with seek points and uncompressed with texenc), plus the demo's `test_stream.ktx2`, from local servers (alpha-video-source's `range-server.mjs`, a sibling checkout), through `alphavideotest://streamtest?…` links; the screen reports its events back over HTTP (`adb reverse` on Android). For each player it checks range requests and a seek that jumps to the Cues or a seek point, a server without range support, replay from the disk store (also after restarting the app) and the memory store with no requests, `source.headers`, and an app data source: Media3's `DefaultHttpDataSource` on Android (through `alpha-video-media3` and `alpha-video-gpu-media3`), and the URLSession one in `AppDelegate.swift` on iOS. alpha-video also checks preload in one request, and on Android the C++ core's range requests. KTX2 cases are named `ktx2 …`. The Android release build allows cleartext HTTP to `127.0.0.1` only.
+`test:streaming` plays clips it makes itself (`testing/build/streaming`: 10 s WebMs with ffmpeg, and KTX2 with seek points and uncompressed with texenc), plus the demo's `test_stream.ktx2`, from local servers (range-source's `range-server.mjs`, a sibling checkout), through `alphavideotest://streamtest?…` links; the screen reports its events back over HTTP (`adb reverse` on Android). For each player it checks range requests and a seek that jumps to the Cues or a seek point, a server without range support, replay from the disk store (also after restarting the app) and the memory store with no requests, `source.headers`, and an app data source: Media3's `DefaultHttpDataSource` on Android (through `alpha-video-media3` and `alpha-video-gpu-media3`), and the URLSession one in `AppDelegate.swift` on iOS. alpha-video also checks preload in one request, and on Android the C++ core's range requests. KTX2 cases are named `ktx2 …`. The Android release build allows cleartext HTTP to `127.0.0.1` only.
 
 ### Everything, on both platforms
 

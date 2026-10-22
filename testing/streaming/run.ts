@@ -120,7 +120,7 @@ async function startReportServer() {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const rangeStart = (range: string | null) => (range ? Number(/^bytes=(\d+)-/.exec(range)?.[1] ?? NaN) : 0);
 
-const serverModule = path.resolve(demoRoot, '../alpha-video-source/web/test/range-server.mjs');
+const serverModule = path.resolve(demoRoot, '../range-source/web/test/range-server.mjs');
 const { startRangeServer } = (await import(serverModule)) as { startRangeServer: StartRangeServer };
 const ranged = await startRangeServer({ range: true });
 const unranged = await startRangeServer({ range: false });
