@@ -2,6 +2,9 @@ import UIKit
 import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
+#if canImport(RangeSource)
+import RangeSource
+#endif
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -30,8 +33,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     )
 
     watchPixelTestLinks()
-    AlphaVideoDataSources.register(TestDataSource(), name: "test")
-    AlphaVideoGpuDataSources.register(TestGpuDataSource(), name: "test")
+#if canImport(RangeSource)
+    RangeDataSources.register(TestDataSource(), name: "test")
+#endif
     return true
   }
 
@@ -64,60 +68,38 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   }
 }
 
-/// The stream tests' data sources (testing/streaming): read each window with a URLSession range
-/// request, as an app's own source would, marked by its user agent. One per player, as the two
-/// protocols share a selector.
-final class TestDataSource: NSObject, AlphaVideoDataSource {
+#if canImport(RangeSource)
+/// The stream tests' data source (testing/streaming), for both players, with react-native-range-source
+/// installed: reads each window with a URLSession range request, as an app's own source would,
+/// marked by its user agent.
+final class TestDataSource: NSObject, RangeDataSource {
   func read(
     url: URL, offset: Int64, length: Int64, headers: [String: String],
-    response: @escaping (AlphaVideoDataInfo) -> Void,
+    response: @escaping (RangeDataInfo) -> Void,
     data: @escaping (Data) -> Void,
     completion: @escaping (Error?) -> Void
-  ) -> AlphaVideoCancellable {
-    testRangeRequest(url: url, offset: offset, length: length, headers: headers, data: data, completion: completion) {
-      response(AlphaVideoDataInfo(size: $0, etag: $1, lastModified: $2))
+  ) -> RangeCancellable {
+    var request = URLRequest(url: url)
+    headers.forEach { request.setValue($1, forHTTPHeaderField: $0) }
+    request.setValue("bytes=\(offset)-\(offset + length - 1)", forHTTPHeaderField: "Range")
+    request.setValue("AlphaVideoTest-DataSource", forHTTPHeaderField: "User-Agent")
+    let task = URLSession.shared.dataTask(with: request) { body, urlResponse, error in
+      if let error { return completion(error) }
+      guard let http = urlResponse as? HTTPURLResponse, http.statusCode == 206 || http.statusCode == 416,
+            let total = http.value(forHTTPHeaderField: "Content-Range")?.split(separator: "/").last.flatMap({ Int64($0) })
+      else { return completion(URLError(.badServerResponse)) }
+      response(RangeDataInfo(size: total, etag: http.value(forHTTPHeaderField: "ETag"),
+                             lastModified: http.value(forHTTPHeaderField: "Last-Modified")))
+      if http.statusCode == 206, let body, !body.isEmpty { data(body) }
+      completion(nil)
     }
+    task.resume()
+    return task
   }
 }
 
-final class TestGpuDataSource: NSObject, AlphaVideoGpuDataSource {
-  func read(
-    url: URL, offset: Int64, length: Int64, headers: [String: String],
-    response: @escaping (AlphaVideoGpuDataInfo) -> Void,
-    data: @escaping (Data) -> Void,
-    completion: @escaping (Error?) -> Void
-  ) -> AlphaVideoGpuCancellable {
-    testRangeRequest(url: url, offset: offset, length: length, headers: headers, data: data, completion: completion) {
-      response(AlphaVideoGpuDataInfo(size: $0, etag: $1, lastModified: $2))
-    }
-  }
-}
-
-/// `response` gets the file's size, ETag and Last-Modified.
-private func testRangeRequest(
-  url: URL, offset: Int64, length: Int64, headers: [String: String],
-  data: @escaping (Data) -> Void,
-  completion: @escaping (Error?) -> Void,
-  response: @escaping (Int64, String?, String?) -> Void
-) -> URLSessionTask {
-  var request = URLRequest(url: url)
-  headers.forEach { request.setValue($1, forHTTPHeaderField: $0) }
-  request.setValue("bytes=\(offset)-\(offset + length - 1)", forHTTPHeaderField: "Range")
-  request.setValue("AlphaVideoTest-DataSource", forHTTPHeaderField: "User-Agent")
-  let task = URLSession.shared.dataTask(with: request) { body, urlResponse, error in
-    if let error { return completion(error) }
-    guard let http = urlResponse as? HTTPURLResponse, http.statusCode == 206 || http.statusCode == 416,
-          let total = http.value(forHTTPHeaderField: "Content-Range")?.split(separator: "/").last.flatMap({ Int64($0) })
-    else { return completion(URLError(.badServerResponse)) }
-    response(total, http.value(forHTTPHeaderField: "ETag"), http.value(forHTTPHeaderField: "Last-Modified"))
-    if http.statusCode == 206, let body, !body.isEmpty { data(body) }
-    completion(nil)
-  }
-  task.resume()
-  return task
-}
-
-extension URLSessionTask: AlphaVideoCancellable, AlphaVideoGpuCancellable {}
+extension URLSessionTask: RangeCancellable {}
+#endif
 
 class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
   override func sourceURL(for bridge: RCTBridge) -> URL? {

@@ -2014,6 +2014,7 @@ PODS:
     - SDWebImageAVIFCoder (~> 0.11)
     - SocketRocket
     - Yoga
+  - react-native-range-source (1.0.0)
   - react-native-safe-area-context (5.6.2):
     - boost
     - DoubleConversion
@@ -2864,6 +2865,7 @@ DEPENDENCIES:
   - react-native-alpha-video-ffmpegkit (from `../node_modules/react-native-alpha-video-ffmpegkit`)
   - react-native-alpha-video-gpu (from `../node_modules/react-native-alpha-video-gpu`)
   - react-native-apng-avif (from `../node_modules/react-native-apng-avif`)
+  - react-native-range-source (from `../node_modules/react-native-range-source`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-skia (from `../node_modules/@shopify/react-native-skia`)"
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
@@ -3011,6 +3013,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-alpha-video-gpu"
   react-native-apng-avif:
     :path: "../node_modules/react-native-apng-avif"
+  react-native-range-source:
+    :path: "../node_modules/react-native-range-source"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
   react-native-skia:
@@ -3135,10 +3139,11 @@ SPEC CHECKSUMS:
   React-logger: b8483fa08e0d62e430c76d864309d90576ca2f68
   React-Mapbuffer: 7b72a669e94662359dad4f42b5af005eb24b4e83
   React-microtasksnativemodule: cdc02da075f2857803ed63f24f5f72fc40e094c0
-  react-native-alpha-video: 6e2ceefe6f8661842a068a323b43f5859cdaf423
+  react-native-alpha-video: 0cda5761dd60b9f16d06e7fa04986151f02abbf7
   react-native-alpha-video-ffmpegkit: e04ee183e12de0000e20b5f51be0a260fc8a1424
-  react-native-alpha-video-gpu: 1aa4fa4b9b460ec2e1af06d60611e49402c750db
+  react-native-alpha-video-gpu: a1ccdf094ce071656a033d5315f2d8ef63986d2d
   react-native-apng-avif: 7945c7d8b5737cc61777cd1fa2a2de42cef2c817
+  react-native-range-source: 67023499dc62434fe1789db66620dfc0101a66ff
   react-native-safe-area-context: c00143b4823773bba23f2f19f85663ae89ceb460
   react-native-skia: b60d0b9d9aea330baef956b7f015d0af2b42076d
   React-NativeModulesApple: a2c3d2cbec893956a5b3e4060322db2984fff75b
