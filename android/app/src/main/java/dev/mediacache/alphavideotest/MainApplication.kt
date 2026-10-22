@@ -1,19 +1,12 @@
 package dev.mediacache.alphavideotest
 
 import android.app.Application
-import androidx.annotation.OptIn
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.DefaultHttpDataSource
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
 import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import dev.mediacache.alphavideotest.exoplayer.RNExoVp9AlphaPackage
-import dev.mediacache.alphavideo.AlphaVideoDataSources
-import dev.mediacache.alphavideo.gpu.AlphaVideoGpuDataSources
-import dev.mediacache.alphavideo.gpu.media3.Media3AlphaVideoGpuDataSource
-import dev.mediacache.alphavideo.media3.Media3AlphaVideoDataSource
 
 class MainApplication : Application(), ReactApplication {
 
@@ -30,13 +23,13 @@ class MainApplication : Application(), ReactApplication {
     )
   }
 
-  @OptIn(UnstableApi::class)
   override fun onCreate() {
     super.onCreate()
-    // The stream tests' data sources (testing/streaming): Media3's HTTP stack, by its user agent
-    val media3 = DefaultHttpDataSource.Factory().setUserAgent("AlphaVideoTest-Media3")
-    AlphaVideoDataSources.register("media3", Media3AlphaVideoDataSource.factory(media3))
-    AlphaVideoGpuDataSources.register("media3", Media3AlphaVideoGpuDataSource.factory(media3))
+    // The stream tests' data sources, when react-native-range-source is installed (app/build.gradle)
+    try {
+      Class.forName("dev.mediacache.alphavideotest.RangeSourceSetup").getMethod("registerDataSources").invoke(null)
+    } catch (e: ClassNotFoundException) {
+    }
     loadReactNative(this)
   }
 }

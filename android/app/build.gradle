@@ -95,10 +95,12 @@ android {
         main {
             // The demo media, read in place as asset://media/...
             assets.srcDirs += ['../../assets']
-            // alpha-video-media3 and alpha-video-gpu-media3 from the player repos, for the stream
-            // tests' Media3 data sources; the npm packages don't carry them
-            java.srcDirs += ['../../../webmvp9alphaplayer/react-native-webm-alpha-player/android/media3/src/main/java',
-                             '../../../ktx2player/android/media3/src/main/java']
+            // With react-native-range-source installed: range-source-media3 from its repository,
+            // which the npm package doesn't carry, and the stream tests' data sources
+            // (src/rangesource). Without it, the players use their basic input.
+            if (rootProject.findProject(':react-native-range-source')) {
+                java.srcDirs += ['src/rangesource/java', '../../../range-source/android/media3/src/main/java']
+            }
         }
     }
 
