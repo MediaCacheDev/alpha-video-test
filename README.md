@@ -212,3 +212,7 @@ done
 ```
 
 A full pixel run takes about 25 minutes on the Android emulator and 6 on the iOS simulator.
+
+## License
+
+MIT. The players it compares are separate packages, each with its own license and third-party notices.
