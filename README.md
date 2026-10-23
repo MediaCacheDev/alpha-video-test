@@ -21,7 +21,7 @@ The asset panel on the left has a section per player, in the player's colour, an
 - the clip: **Glow** (400×400, 181 frames at 30 fps, mostly transparent) or **Manta** (1920×1080, 424 frames at 29.97 fps);
 - the variant, where the player reads more than one: **Zstd** or **Raw** for ASTC; for the C++ player **S-VP9** (single stream, the alpha inside the VP9 stream), **D-VP9** and **D-AV1** (dual stream, the alpha in its own track). FFmpegKit and ExoPlayer play S-VP9 only.
 
-A player keeps the file it was spawned with, so changing the panel only affects the next spawn. The panels on the right set each player's playback: modes (`preload` or `stream`), the C++ player's decoder (on Android `auto`, `mediacodec`, `mediacodec-hw`, `mediacodec-sw` or `software`; on the web `auto`, `browser`, `webcodecs`, `webcodecs-hw`, `webcodecs-sw` or `software`; iOS always uses `software`) and the KTX2 streaming buffers. The C++ player's mode, decode queue, cache and prefetch settings are hidden on the web, where its player has none of them, and so is the FFmpegKit panel: on the web that player is a plain `<video>`. These apply to the players already on screen too. Each tile shows its clip, its variant and the decoder it ended up on.
+A player keeps the file it was spawned with, so changing the panel only affects the next spawn. The panels on the right set each player's playback: modes (`preload` or `stream`), the C++ player's decoder (on Android `auto`, `mediacodec`, `mediacodec-hw`, `mediacodec-sw` or `software`; on the web `auto`, `browser`, `webcodecs`, `webcodecs-hw`, `webcodecs-sw` or `software`; iOS always uses `software`) and the KTX2 streaming prefetch and memory strategy. The C++ player's mode, decode queue and prefetch settings are hidden on the web, where its player has none of them, and so is the FFmpegKit panel: on the web that player is a plain `<video>`. These apply to the players already on screen too. Each tile shows its clip, its variant and the decoder it ended up on.
 
 Tiles are 150 px wide, so the 1080p Manta is shrunk about 13 times. ASTC files have no mipmaps, so at that scale Manta looks pixelated in the ASTC tiles, while the video tiles look smoother; the frames themselves are clean. Turn on **Real Size** to draw every player at the clip's own size. The [alpha-video-gpu README](https://github.com/MediaCacheDev/alpha-video-gpu#drawing-size) explains why.
 
@@ -39,7 +39,7 @@ Tiles are 150 px wide, so the 1080p Manta is shrunk about 13 times. ASTC files h
 
 ```sh
 npm install
-npm run media                    # downloads the 4 source clips, then makes the other variants (see Demo media)
+npm run media                    # asks for small, medium or large, then downloads and makes the clips (see Demo media)
 
 # iOS only
 bundle install                   # installs the CocoaPods version pinned in Gemfile
@@ -62,15 +62,26 @@ On the web, `index.web.js` registers range-source's Service Worker before render
 
 ## Demo media
 
-The clips live in `assets/media/`, which isn't committed. Everything in it is bundled into the APK, the iOS app and the web build. Only four source files are downloaded; the other variants are made from them on your machine.
+The clips live in `assets/media/`, which isn't committed. Everything in it is bundled into the APK, the iOS app and the web build. At most four source files are downloaded; the other variants are made from them on your machine.
+
+`npm run media` asks for one of three sizes, or takes it as an argument (`s`, `m`, `l` or the full name):
+
+| Size | In `assets/media/` | What it does | Plays |
+|---|---|---|---|
+| `s` small | 11 MB | Downloads Glow as a VP9 WebM and as zstd ASTC KTX2. Makes nothing, so it needs no tools | Glow on the WebM C++, FFmpegKit, ExoPlayer and ASTC Zstd buttons |
+| `m` medium | about 310 MB | Downloads Glow and the 1080p Manta (110 MB), then makes every variant but Raw Manta: dual-stream VP9 and AV1, APNG, AVIF and Raw Glow. About 3 minutes, and needs the tools below | Everything but Raw Manta |
+| `l` large | about 1.2 GB | Medium, plus Raw Manta: Manta's zstd KTX2 decompressed, 879 MB | Everything |
 
 ```sh
-npm run media                    # both steps below
-npm run fetch-media              # downloads the sources from the media-v1 release, checking each SHA-256
-npm run make-media               # makes the variants from the sources
+npm run media                    # asks for the size
+npm run media -- m               # medium, without asking
+npm run fetch-media              # just the downloads: the sources from the media-v1 release, checking each SHA-256
+npm run make-media               # just the variants, from whichever sources are there
 ```
 
-**Downloaded** (listed in `media.manifest.json`, about 110 MB):
+The app greys out whatever a size leaves out (see Leaving files out, below). A size also deletes the files it leaves out, since everything in `assets/media/` goes into the app, so running `npm run media -- s` after a large set shrinks it again. Switching back up downloads and makes only what's missing. `fetch-media` and `make-media` take the same `--size`; without it they get every file.
+
+**Downloaded** (listed in `media.manifest.json`, about 110 MB; small takes the two Glow files, 11 MB):
 
 | File | What it is |
 |---|---|
@@ -79,7 +90,7 @@ npm run make-media               # makes the variants from the sources
 | `test_stream.ktx2` | Glow, ASTC 4x4, zstd |
 | `manta_stream.ktx2` | Manta, ASTC 4x4, zstd |
 
-**Made by `make-media`** (about 2 minutes 40 seconds on an M4 Pro; most of it is the Manta APNG):
+**Made by `make-media`** (medium and large; about 2 minutes 40 seconds on an M4 Pro, most of it the Manta APNG):
 
 | Variant | Glow | Manta | Made from |
 |---|---|---|---|
@@ -91,7 +102,7 @@ npm run make-media               # makes the variants from the sources
 
 Every variant comes from the same source, so the players show the same pictures. The WebMs keep their source's frame rate and colour tags (Manta is BT.709). `make-media` remakes a file only when its source or its recipe has changed (`assets/media/.generated.json` records both); `--force` remakes everything.
 
-**Tools** (`make-media` checks them first and names what's missing):
+**Tools** (medium and large; `make-media` checks them first and names what's missing):
 
 - ffmpeg with libvpx (VP9) and libsvtav1 (AV1). It decodes with libvpx because ffmpeg's own VP9 decoder drops the alpha;
 - `avifenc` from libavif;
@@ -100,7 +111,7 @@ Every variant comes from the same source, so the players show the same pictures.
 
 On macOS: `brew install ffmpeg libavif zstd`. Homebrew's ffmpeg includes libvpx and SVT-AV1.
 
-**Leaving files out.** The app greys out any clip, variant or spawn button whose file isn't in `assets/media/`, so you can leave out the large ones and keep a smaller app:
+**Leaving files out.** The app greys out any clip, variant or spawn button whose file isn't in `assets/media/`, so besides the sizes you can leave out any file:
 
 ```sh
 npm run make-media -- --skip manta_uncompressed           # without the 879 MB Raw Manta
@@ -110,7 +121,7 @@ npm run make-media -- --only manta_dual                   # make just these
 
 `--skip` takes a regex on the file name, and deletes a matching file that's already there. A variant whose source wasn't downloaded is left out the same way. Which files are present is read from `src/media.generated.json`, which Metro and webpack rewrite when they start (and `npm install`, `fetch-media` and `make-media` after them). After adding or deleting files by hand, restart Metro, or run `node scripts/media-index.js` while it's running.
 
-With everything in, `assets/media/` is about 1.1 GB, most of it Raw Manta; leave that out for an emulator with little storage.
+With everything in (large), `assets/media/` is about 1.2 GB, most of it Raw Manta; medium or small suit an emulator with little storage. The tests need `test_stream.ktx2` (`test:streaming`), which every size has.
 
 ## Tests
 

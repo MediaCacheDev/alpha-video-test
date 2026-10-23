@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "postinstall": "node scripts/media-index.js",
-    "media": "npm run fetch-media && npm run make-media",
+    "media": "node scripts/media.mjs",
     "fetch-media": "node scripts/fetch-media.mjs",
     "make-media": "node scripts/make-media.mjs",
     "android": "react-native run-android",

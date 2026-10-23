@@ -3,7 +3,10 @@
 // Release named there. Files already present with the right SHA-256 are left alone. These are the
 // sources: `npm run make-media` makes the other variants from them.
 //
-//   npm run fetch-media
+//   npm run fetch-media [-- --size s|m|l]
+//
+// --size downloads only that size's sources (see media-sizes.mjs) and deletes the others; without
+// it, every source.
 
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -12,11 +15,16 @@ import path from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 import mediaIndex from './media-index.js';
+import { SIZES, parseSize } from './media-sizes.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const mediaDir = path.join(root, 'assets', 'media');
 const manifest = JSON.parse(await readFile(path.join(root, 'media.manifest.json'), 'utf8'));
+const { values: args } = parseArgs({ options: { size: { type: 'string' } } });
+const size = args.size == null ? null : parseSize(args.size);
+if (args.size != null && !size) throw new Error(`--size is s, m or l, not "${args.size}"`);
 
 async function sha256(file) {
   const hash = createHash('sha256');
@@ -49,8 +57,15 @@ async function download(entry, file) {
 }
 
 await mkdir(mediaDir, { recursive: true });
+let fetched = 0;
 for (const entry of manifest.files) {
   const file = path.join(mediaDir, entry.name);
+  if (size && !SIZES[size].download(entry.name)) {
+    // Removed, not just left alone: whatever is in assets/media goes into the app
+    if (await rm(file).then(() => true, () => false)) console.log(`  – ${entry.name} removed (not in ${size})`);
+    continue;
+  }
+  fetched++;
   if (await isCurrent(file, entry)) {
     console.log(`  ✔ ${entry.name}`);
     continue;
@@ -59,4 +74,4 @@ for (const entry of manifest.files) {
   await download(entry, file);
 }
 mediaIndex.writeMediaIndex();
-console.log(`✅ ${manifest.files.length} files in ${path.relative(root, mediaDir)}. Next: npm run make-media`);
+console.log(`✅ ${fetched} sources in ${path.relative(root, mediaDir)}${size ? '' : '. Next: npm run make-media'}`);

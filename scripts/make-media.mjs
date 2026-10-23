@@ -6,9 +6,10 @@
 // Run `npm run fetch-media` first. Files whose source and recipe haven't changed are left alone;
 // a file whose source is missing is left out, and the app greys out its button.
 //
-//   npm run make-media [-- --force] [-- --only <regex>] [-- --skip <regex>]
+//   npm run make-media [-- --force] [-- --only <regex>] [-- --skip <regex>] [-- --size s|m|l]
 //
 // --skip leaves out the outputs it matches and deletes them if they're there, e.g. --skip manta_uncompressed
+// --size leaves out, the same way, what that size doesn't make (see media-sizes.mjs)
 //
 // Needs ffmpeg with libvpx and libsvtav1, avifenc and zstd (Homebrew: brew install ffmpeg libavif zstd).
 
@@ -20,14 +21,17 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import mediaIndex from './media-index.js';
+import { SIZES, parseSize } from './media-sizes.mjs';
 
 const { writeMediaIndex } = mediaIndex;
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const mediaDir = path.join(root, 'assets', 'media');
 const stampFile = path.join(mediaDir, '.generated.json');
 const { values: args } = parseArgs({
-  options: { force: { type: 'boolean' }, only: { type: 'string' }, skip: { type: 'string' } },
+  options: { force: { type: 'boolean' }, only: { type: 'string' }, skip: { type: 'string' }, size: { type: 'string' } },
 });
+const size = args.size == null ? null : parseSize(args.size);
+if (args.size != null && !size) throw new Error(`--size is s, m or l, not "${args.size}"`);
 
 const VP9 = ['-c:v', 'libvpx-vp9', '-crf', '30', '-b:v', '0', '-auto-alt-ref', '0', '-row-mt', '1'];
 const AV1 = ['-c:v', 'libsvtav1', '-crf', '32', '-preset', '8'];
@@ -207,20 +211,22 @@ function sha256(file) {
 
 const only = args.only ? new RegExp(args.only) : null;
 const skip = args.skip ? new RegExp(args.skip) : null;
+const leftOut = (output) => skip?.test(output) || (size && !SIZES[size].make(output));
 const selected = RECIPES.filter((r) => !only || only.test(r.output));
 const stamps = fs.existsSync(stampFile) ? JSON.parse(fs.readFileSync(stampFile, 'utf8')) : {};
-checkTools();
+if (selected.some((r) => !leftOut(r.output))) checkTools();
 
 let made = 0;
 for (const { output, source, recipe, make } of selected) {
   const sourcePath = path.join(mediaDir, source);
   const outputPath = path.join(mediaDir, output);
-  if (skip?.test(output)) {
+  if (leftOut(output)) {
     // Removed, not just left alone: whatever is in assets/media goes into the app
-    if (fs.existsSync(outputPath)) fs.rmSync(outputPath);
+    const removed = fs.existsSync(outputPath);
+    if (removed) fs.rmSync(outputPath);
     delete stamps[output];
-    fs.writeFileSync(stampFile, `${JSON.stringify(stamps, null, 2)}\n`);
-    console.log(`  – ${output} skipped`);
+    if (fs.existsSync(mediaDir)) fs.writeFileSync(stampFile, `${JSON.stringify(stamps, null, 2)}\n`);
+    if (removed || !size) console.log(`  – ${output} ${removed ? 'removed' : 'skipped'}`);
     continue;
   }
   if (!fs.existsSync(sourcePath)) {
@@ -240,8 +246,8 @@ for (const { output, source, recipe, make } of selected) {
   fs.renameSync(partial, outputPath);
   stamps[output] = stamp;
   fs.writeFileSync(stampFile, `${JSON.stringify(stamps, null, 2)}\n`);
-  const size = (fs.statSync(outputPath).size / 1e6).toFixed(1);
-  console.log(`  ✚ ${output} from ${source} (${size} MB, ${((Date.now() - started) / 1000).toFixed(0)} s)`);
+  const megabytes = (fs.statSync(outputPath).size / 1e6).toFixed(1);
+  console.log(`  ✚ ${output} from ${source} (${megabytes} MB, ${((Date.now() - started) / 1000).toFixed(0)} s)`);
 }
 writeMediaIndex();
-console.log(`✅ ${made} files in ${path.relative(root, mediaDir)}`);
+console.log(`✅ ${made} variants in ${path.relative(root, mediaDir)}`);
