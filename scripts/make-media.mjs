@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Makes the demo media that's derived from the downloaded sources, into assets/media/:
 //   - from each single-stream alpha WebM (VP9 with the alpha in BlockAdditional): dual-stream VP9,
-//     dual-stream AV1, APNG and AVIF
+//     dual-stream AV1, single- and dual-stream VP8, APNG and AVIF
 //   - from a zstd KTX2: the same ASTC layers uncompressed
 // Run `npm run fetch-media` first. Files whose source and recipe haven't changed are left alone;
 // a file whose source is missing is left out, and the app greys out its button.
@@ -35,13 +35,25 @@ if (args.size != null && !size) throw new Error(`--size is s, m or l, not "${arg
 
 const VP9 = ['-c:v', 'libvpx-vp9', '-crf', '30', '-b:v', '0', '-auto-alt-ref', '0', '-row-mt', '1'];
 const AV1 = ['-c:v', 'libsvtav1', '-crf', '32', '-preset', '8'];
+// libvpx's VP8 needs a bitrate cap with -crf
+const VP8 = ['-c:v', 'libvpx', '-crf', '10', '-b:v', '4M', '-auto-alt-ref', '0', '-threads', '8'];
 
 // Colour as stream 0 and alpha as a grey 4:2:0 video in stream 1, the layout alpha-video reads
-const DUAL_SPLIT = '[0:v]split[c][a];[c]format=yuv420p[colour];[a]alphaextract,format=yuv420p[alpha]';
+const dualSplit = (colour) => `[0:v]split[c][a];[c]${colour}format=yuv420p[colour];[a]alphaextract,format=yuv420p[alpha]`;
+const DUAL_SPLIT = dualSplit('');
+
+// VP8 has one colour matrix, BT.601, and players decode it with that, so BT.709 sources are converted
+const toBt601 = (info) => `scale=in_color_matrix=${info.matrix}:in_range=tv:out_color_matrix=bt601:out_range=tv,`;
 
 const CLIPS = [
-  { source: 'test_webm.webm', dualVp9: 'test_webm_dual.webm', dualAv1: 'test_webm_dual_av1.webm', apng: 'test_apng.apng', avif: 'test_avif.avif' },
-  { source: 'manta_1080p_yuva.webm', dualVp9: 'manta_dual.webm', dualAv1: 'manta_dual_av1.webm', apng: 'manta_apng.apng', avif: 'manta_avif.avif' },
+  {
+    source: 'test_webm.webm', dualVp9: 'test_webm_dual.webm', dualAv1: 'test_webm_dual_av1.webm',
+    vp8: 'test_webm_vp8.webm', dualVp8: 'test_webm_dual_vp8.webm', apng: 'test_apng.apng', avif: 'test_avif.avif',
+  },
+  {
+    source: 'manta_1080p_yuva.webm', dualVp9: 'manta_dual.webm', dualAv1: 'manta_dual_av1.webm',
+    vp8: 'manta_vp8.webm', dualVp8: 'manta_dual_vp8.webm', apng: 'manta_apng.apng', avif: 'manta_avif.avif',
+  },
 ];
 const UNCOMPRESSED_KTX2 = [
   { source: 'test_stream.ktx2', output: 'test_uncompressed.ktx2' },
@@ -61,7 +73,7 @@ function checkTools() {
   try {
     const encoders = listed('-encoders');
     const decoders = listed('-decoders');
-    for (const name of ['libvpx-vp9', 'libsvtav1', 'apng']) if (!new RegExp(` ${name} `).test(encoders)) missing.push(`ffmpeg encoder ${name}`);
+    for (const name of ['libvpx-vp9', 'libvpx', 'libsvtav1', 'apng']) if (!new RegExp(` ${name} `).test(encoders)) missing.push(`ffmpeg encoder ${name}`);
     if (!/ libvpx-vp9 /.test(decoders)) missing.push('ffmpeg decoder libvpx-vp9');
   } catch {
     missing.push('ffmpeg');
@@ -103,6 +115,15 @@ const toRgba = (info) =>
 function makeDual(codecArgs) {
   return (source, output, info) => ffmpeg([...decode(source), '-filter_complex', DUAL_SPLIT,
     '-map', '[colour]', '-map', '[alpha]', ...codecArgs, ...info.tags, '-metadata:s:v:1', 'title=Alpha', '-f', 'webm', output]);
+}
+
+function makeVp8(source, output, info) {
+  ffmpeg([...decode(source), '-vf', `${toBt601(info)}format=yuva420p`, ...VP8, '-f', 'webm', output]);
+}
+
+function makeDualVp8(source, output, info) {
+  ffmpeg([...decode(source), '-filter_complex', dualSplit(toBt601(info)),
+    '-map', '[colour]', '-map', '[alpha]', ...VP8, '-metadata:s:v:1', 'title=Alpha', '-f', 'webm', output]);
 }
 
 function makeApng(source, output, info) {
@@ -199,6 +220,8 @@ const RECIPES = [
   ...CLIPS.flatMap((clip) => [
     { output: clip.dualVp9, source: clip.source, recipe: `dual ${VP9.join(' ')} ${DUAL_SPLIT}`, make: makeDual(VP9) },
     { output: clip.dualAv1, source: clip.source, recipe: `dual ${AV1.join(' ')} ${DUAL_SPLIT}`, make: makeDual(AV1) },
+    { output: clip.vp8, source: clip.source, recipe: `${VP8.join(' ')} bt601`, make: makeVp8 },
+    { output: clip.dualVp8, source: clip.source, recipe: `dual ${VP8.join(' ')} bt601 ${DUAL_SPLIT}`, make: makeDualVp8 },
     { output: clip.apng, source: clip.source, recipe: 'apng untagged rgba', make: makeApng },
     { output: clip.avif, source: clip.source, recipe: 'avifenc -s 6 -y 444 untagged rgba', make: makeAvif },
   ]),

@@ -76,6 +76,8 @@ export const PLAYERS: Player[] = [
       SINGLE_VP9,
       { id: 'dualVp9', label: 'D-VP9', files: { glow: media('test_webm_dual.webm'), manta: media('manta_dual.webm') } },
       { id: 'dualAv1', label: 'D-AV1', files: { glow: media('test_webm_dual_av1.webm'), manta: media('manta_dual_av1.webm') } },
+      { id: 'vp8', label: 'S-VP8', files: { glow: media('test_webm_vp8.webm'), manta: media('manta_vp8.webm') } },
+      { id: 'dualVp8', label: 'D-VP8', files: { glow: media('test_webm_dual_vp8.webm'), manta: media('manta_dual_vp8.webm') } },
     ],
   },
   {
@@ -100,35 +102,24 @@ export const PLAYERS: Player[] = [
 
 export const PLAYER_BY_ID = Object.fromEntries(PLAYERS.map(p => [p.id, p])) as Record<PlayerId, Player>;
 
-export interface Selection {
-  clip: ClipId;
-  variant: string;
+/** Whether any player has a file of the clip */
+export function hasClip(clip: ClipId): boolean {
+  return PLAYERS.some(p => p.variants.some(v => v.files[clip]));
 }
 
-/** The first clip and variant that has a file, in catalog order */
-function firstSelection(player: Player): Selection {
-  for (const clip of CLIPS) {
-    const variant = player.variants.find(v => v.files[clip.id]);
-    if (variant) return { clip: clip.id, variant: variant.id };
-  }
-  return { clip: CLIPS[0].id, variant: player.variants[0].id };
-}
+/** The first clip with a file, in catalog order */
+export const DEFAULT_CLIP = CLIPS.find(c => hasClip(c.id))?.id ?? CLIPS[0].id;
 
-export const DEFAULT_SELECTIONS = Object.fromEntries(
-  PLAYERS.map(p => [p.id, firstSelection(p)]),
-) as Record<PlayerId, Selection>;
+/** The variant each player starts with picked */
+export const DEFAULT_VARIANTS = Object.fromEntries(
+  PLAYERS.map(p => [p.id, p.variants[0].id]),
+) as Record<PlayerId, string>;
 
-export function fileFor(player: Player, selection: Selection): string | undefined {
-  return player.variants.find(v => v.id === selection.variant)?.files[selection.clip];
-}
-
-/** Picking a clip keeps the variant if it has that clip, else moves to the first variant that does */
-export function selectClip(player: Player, selection: Selection, clip: ClipId): Selection {
-  if (fileFor(player, { clip, variant: selection.variant })) return { clip, variant: selection.variant };
-  const variant = player.variants.find(v => v.files[clip]);
-  return variant ? { clip, variant: variant.id } : selection;
-}
-
-export function hasClip(player: Player, clip: ClipId): boolean {
-  return player.variants.some(v => v.files[clip]);
+/**
+ * What a player plays of the clip: the picked variant, or the first that has the clip when it
+ * doesn't, so switching clips back returns to the pick. Undefined when no variant has the clip.
+ */
+export function variantFor(player: Player, clip: ClipId, picked: string): Variant | undefined {
+  const withClip = player.variants.filter(v => v.files[clip]);
+  return withClip.find(v => v.id === picked) ?? withClip[0];
 }

@@ -16,10 +16,10 @@ Each button at the bottom is one player:
 
 The KTX2 files are made with [alpha-video-gpu-encoder](https://github.com/MediaCacheDev/alpha-video-gpu-encoder). [alpha-video](https://github.com/MediaCacheDev/alpha-video#alpha-video-or-alpha-video-gpu) explains when to pick a codec and when ASTC.
 
-The asset panel on the left has a section per player, in the player's colour, and each section keeps its own choice of what its button spawns next:
+The panel on the left picks what the buttons spawn next:
 
-- the clip: **Glow** (400×400, 181 frames at 30 fps, mostly transparent) or **Manta** (1920×1080, 424 frames at 29.97 fps);
-- the variant, where the player reads more than one: **Zstd** or **Raw** for ASTC; for the C++ player **S-VP9** (single stream, the alpha inside the VP9 stream), **D-VP9** and **D-AV1** (dual stream, the alpha in its own track). FFmpegKit and ExoPlayer play S-VP9 only.
+- the clip, under **Real Size**, for every button: **Glow** (400×400, 181 frames at 30 fps, mostly transparent) or **Manta** (1920×1080, 424 frames at 29.97 fps);
+- the variant, in a section in the player's colour for each player that reads more than one: **Zstd** or **Raw** for ASTC; for the C++ player **S-VP9** and **S-VP8** (single stream, the alpha inside the VP9 or VP8 stream), **D-VP9**, **D-AV1** and **D-VP8** (dual stream, the alpha in its own track). FFmpegKit and ExoPlayer play S-VP9 only, APNG and AVIF their one file. When the clip has no file of the picked variant, the button plays the first variant that has one.
 
 A player keeps the file it was spawned with, so changing the panel only affects the next spawn. The panels on the right set each player's playback: modes (`preload` or `stream`), the C++ player's decoder (on Android `auto`, `mediacodec`, `mediacodec-hw`, `mediacodec-sw` or `software`; on the web `auto`, `browser`, `webcodecs`, `webcodecs-hw`, `webcodecs-sw` or `software`; iOS always uses `software`) and the KTX2 streaming prefetch and memory strategy. The C++ player's mode, decode queue and prefetch settings are hidden on the web, where its player has none of them, and so is the FFmpegKit panel: on the web that player is a plain `<video>`. These apply to the players already on screen too. Each tile shows its clip, its variant and the decoder it ended up on.
 
@@ -27,7 +27,7 @@ Tiles are 150 px wide, so the 1080p Manta is shrunk about 13 times. ASTC files h
 
 ## Using the app
 
-- Pick a clip and variant in a player's section of the asset panel, then tap its **+** button to spawn it. Each player has its own border colour. A greyed-out clip, variant or button has no file in `assets/media/` (see [Demo media](#demo-media)).
+- Pick a clip, and a variant in a player's section of the panel, then tap its **+** button to spawn it. Each player has its own border colour. A greyed-out clip, variant or button has no file in `assets/media/` (see [Demo media](#demo-media)).
 - Drag a player by its ✋ grip, change its z-index with ▲/▼ or by typing a number, and close it with ✕. **Clear All** removes every player.
 - The bottom panel shows:
   - **FPS**: frames per second (green 55+, yellow 30+, red below 30);
@@ -69,7 +69,7 @@ The clips live in `assets/media/`, which isn't committed. Everything in it is bu
 | Size | In `assets/media/` | What it does | Plays |
 |---|---|---|---|
 | `s` small | 11 MB | Downloads Glow as a VP9 WebM and as zstd ASTC KTX2. Makes nothing, so it needs no tools | Glow on the WebM C++, FFmpegKit, ExoPlayer and ASTC Zstd buttons |
-| `m` medium | about 310 MB | Downloads Glow and the 1080p Manta (110 MB), then makes every variant but Raw Manta: dual-stream VP9 and AV1, APNG, AVIF and Raw Glow. About 3 minutes, and needs the tools below | Everything but Raw Manta |
+| `m` medium | about 335 MB | Downloads Glow and the 1080p Manta (110 MB), then makes every variant but Raw Manta: dual-stream VP9 and AV1, single- and dual-stream VP8, APNG, AVIF and Raw Glow. About 4 minutes, and needs the tools below | Everything but Raw Manta |
 | `l` large | about 1.2 GB | Medium, plus Raw Manta: Manta's zstd KTX2 decompressed, 879 MB | Everything |
 
 ```sh
@@ -90,17 +90,19 @@ The app greys out whatever a size leaves out (see Leaving files out, below). A s
 | `test_stream.ktx2` | Glow, ASTC 4x4, zstd |
 | `manta_stream.ktx2` | Manta, ASTC 4x4, zstd |
 
-**Made by `make-media`** (medium and large; about 2 minutes 40 seconds on an M4 Pro, most of it the Manta APNG):
+**Made by `make-media`** (medium and large; about 3 minutes 30 seconds on an M4 Pro, most of it the Manta APNG):
 
 | Variant | Glow | Manta | Made from |
 |---|---|---|---|
 | D-VP9 | `test_webm_dual.webm`, 0.6 MB | `manta_dual.webm`, 5.2 MB | the VP9 WebM: colour in one VP9 track, the alpha as a grey 4:2:0 VP9 track (`libvpx-vp9`, CRF 30) |
 | D-AV1 | `test_webm_dual_av1.webm`, 0.5 MB | `manta_dual_av1.webm`, 4.7 MB | the same, in AV1 (`libsvtav1`, CRF 32, preset 8) |
+| S-VP8 | `test_webm_vp8.webm`, 1.5 MB | `manta_vp8.webm`, 10.7 MB | the VP9 WebM, in VP8 with the alpha inside the stream (`libvpx`, CRF 10, capped at 4 Mbit/s). VP8 has one colour matrix, BT.601, which players decode it with, so Manta's BT.709 colours are converted |
+| D-VP8 | `test_webm_dual_vp8.webm`, 1.5 MB | `manta_dual_vp8.webm`, 10.6 MB | the same, as two VP8 tracks like D-VP9 |
 | APNG | `test_apng.apng`, 20 MB | `manta_apng.apng`, 128 MB | the VP9 WebM's decoded frames, lossless |
 | AVIF | `test_avif.avif`, 1.5 MB | `manta_avif.avif`, 7.9 MB | the VP9 WebM's decoded frames (`avifenc`, speed 6, 4:4:4) |
 | Raw | `test_uncompressed.ktx2`, 29 MB | `manta_uncompressed.ktx2`, 879 MB | the zstd KTX2, decompressed: the same ASTC blocks, header and keys |
 
-Every variant comes from the same source, so the players show the same pictures. The WebMs keep their source's frame rate and colour tags (Manta is BT.709). `make-media` remakes a file only when its source or its recipe has changed (`assets/media/.generated.json` records both); `--force` remakes everything.
+Every variant comes from the same source, so the players show the same pictures. The WebMs keep their source's frame rate, and the VP9 and AV1 ones its colour tags (Manta is BT.709). `make-media` remakes a file only when its source or its recipe has changed (`assets/media/.generated.json` records both); `--force` remakes everything.
 
 **Tools** (medium and large; `make-media` checks them first and names what's missing):
 

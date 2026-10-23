@@ -24,14 +24,16 @@ import {
   SpawnControls,
   ExoVp9AlphaView,
   AssetPanel,
+  ClipRow,
 } from './src/components';
 import {
-  DEFAULT_SELECTIONS,
+  DEFAULT_CLIP,
+  DEFAULT_VARIANTS,
   PLAYER_BY_ID,
   CLIPS,
-  fileFor,
+  variantFor,
+  type ClipId,
   type PlayerId,
-  type Selection,
 } from './src/catalog';
 import { usePerformanceMetrics } from './src/hooks/usePerformanceMetrics';
 
@@ -68,7 +70,6 @@ interface AnimationInstance {
   player: PlayerId | 'exovp9alpha';
   /** Fixed when the player is spawned, so later picks in the asset panel don't change it */
   uri: string;
-  variant: string;
   /** Clip and variant, e.g. 'Manta D-AV1' */
   label: string;
   x: number;
@@ -118,11 +119,13 @@ function AppContent() {
   const [ktx2PrefetchAhead, setKtx2PrefetchAhead] = useState(8);
   const [ktx2MemoryStrategy, setKtx2MemoryStrategy] = useState<'ram' | 'vram'>('vram');
 
-  // What each player's spawn button plays next
-  const [selections, setSelections] = useState<Record<PlayerId, Selection>>(DEFAULT_SELECTIONS);
-  const handleSelect = useCallback((player: PlayerId, selection: Selection) => {
-    setSelections(prev => ({ ...prev, [player]: selection }));
+  // What the spawn buttons play next: one clip for all, and each player's variant of it
+  const [clip, setClip] = useState<ClipId>(DEFAULT_CLIP);
+  const [variants, setVariants] = useState<Record<PlayerId, string>>(DEFAULT_VARIANTS);
+  const handleSelectVariant = useCallback((player: PlayerId, variant: string) => {
+    setVariants(prev => ({ ...prev, [player]: variant }));
   }, []);
+  const canSpawn = (player: PlayerId) => !!variantFor(PLAYER_BY_ID[player], clip, variants[player]);
 
   // Settings panels visibility
   const [showSettings, setShowSettings] = useState(true);
@@ -145,30 +148,26 @@ function AppContent() {
     };
   }, []);
 
-  const addInstance = useCallback((player: AnimationInstance['player'], selection: Selection) => {
-    const catalogPlayer = PLAYER_BY_ID[player === 'exovp9alpha' ? 'ffmpegkit' : player];
-    const uri = fileFor(catalogPlayer, selection);
-    if (!uri) return;
-    const clip = CLIPS.find(c => c.id === selection.clip)!.label;
-    const variant = catalogPlayer.variants.find(v => v.id === selection.variant)!;
-    const label = `${clip} ${variant.label}`;
+  const spawn = useCallback((player: AnimationInstance['player']) => {
+    // ExoPlayer plays single-stream VP9, so it takes the FFmpegKit player's files
+    const catalogId = player === 'exovp9alpha' ? 'ffmpegkit' : player;
+    const variant = variantFor(PLAYER_BY_ID[catalogId], clip, variants[catalogId]);
+    const uri = variant?.files[clip];
+    if (!variant || !uri) return;
+    const label = `${CLIPS.find(c => c.id === clip)!.label} ${variant.label}`;
     const pos = getRandomPosition();
     setInstances(prev => [...prev, {
       id: `${player}-${++instanceCounter}`,
       player,
       uri,
-      variant: selection.variant,
       label,
       x: pos.x,
       y: pos.y,
       zIndex: prev.length,
     }]);
-  }, [getRandomPosition]);
+  }, [getRandomPosition, clip, variants]);
 
-  const spawn = useCallback((player: PlayerId) => addInstance(player, selections[player]), [addInstance, selections]);
-
-  // ExoPlayer plays single-stream VP9, so it takes the FFmpegKit player's pick
-  const spawnExoVp9Alpha = useCallback(() => addInstance('exovp9alpha', selections.ffmpegkit), [addInstance, selections]);
+  const spawnExoVp9Alpha = useCallback(() => spawn('exovp9alpha'), [spawn]);
 
   const handleZIndexChange = useCallback((id: string, newZIndex: number) => {
     setInstances(prev =>
@@ -222,7 +221,7 @@ function AppContent() {
       </View>
 
       {showSettings && <View style={[styles.settingsColumnLeft, { top: insets.top + 60 }]}>
-        {/* Real size, then what each player spawns with - top left */}
+        {/* Real size and the clip, then each player's variant - top left */}
         <View style={styles.assetSelector}>
           <View style={styles.assetSwitchRow}>
             <Text style={styles.assetLabel}>Real Size</Text>
@@ -233,9 +232,10 @@ function AppContent() {
               thumbColor={useRealSize ? '#fff' : '#888'}
             />
           </View>
+          <ClipRow clip={clip} onSelect={setClip} />
         </View>
 
-        <AssetPanel selections={selections} onSelect={handleSelect} />
+        <AssetPanel clip={clip} variants={variants} onSelectVariant={handleSelectVariant} />
 
       </View>}
 
@@ -469,7 +469,7 @@ function AppContent() {
       {/* Spawn controls stacked on the metrics panel, so neither overlaps the other */}
       <View style={[styles.bottomDock, { paddingBottom: insets.bottom }]}>
         <SpawnControls
-          selections={selections}
+          canSpawn={canSpawn}
           onSpawn={spawn}
           onSpawnExoVp9Alpha={Platform.OS === 'android' ? spawnExoVp9Alpha : undefined}
           onClearAll={clearAll}

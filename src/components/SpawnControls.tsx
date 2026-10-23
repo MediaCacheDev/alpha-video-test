@@ -1,23 +1,22 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { PLAYERS, PLAYER_BY_ID, fileFor, type PlayerId, type Selection } from '../catalog';
+import { PLAYERS, type PlayerId } from '../catalog';
 
 interface SpawnControlsProps {
-  /** What the asset panel has selected for each player; a button without a file is greyed out */
-  selections: Record<PlayerId, Selection>;
-  /** Spawns a player with what the asset panel has selected for it */
+  /** Whether the player has a file of the picked clip; a button without one is greyed out */
+  canSpawn: (player: PlayerId) => boolean;
+  /** Spawns a player with the picked clip and its picked variant */
   onSpawn: (player: PlayerId) => void;
   onSpawnExoVp9Alpha?: () => void;
   onClearAll: () => void;
 }
 
 export const SpawnControls: React.FC<SpawnControlsProps> = ({
-  selections,
+  canSpawn,
   onSpawn,
   onSpawnExoVp9Alpha,
   onClearAll,
 }) => {
-  const canSpawn = (player: PlayerId) => !!fileFor(PLAYER_BY_ID[player], selections[player]);
   return (
     <View style={styles.container}>
       {PLAYERS.map(player => (

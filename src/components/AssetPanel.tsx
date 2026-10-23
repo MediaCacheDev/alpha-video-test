@@ -3,33 +3,57 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import {
   CLIPS,
   PLAYERS,
-  fileFor,
   hasClip,
-  selectClip,
+  variantFor,
+  type ClipId,
   type Player,
   type PlayerId,
-  type Selection,
 } from '../catalog';
 
-interface AssetPanelProps {
-  selections: Record<PlayerId, Selection>;
-  onSelect: (player: PlayerId, selection: Selection) => void;
+const CLIP_COLOR = '#4a9';
+
+interface ClipRowProps {
+  clip: ClipId;
+  onSelect: (clip: ClipId) => void;
 }
 
-/** What each spawn button plays next: one section per player, in the player's colour */
-export const AssetPanel: React.FC<AssetPanelProps> = ({ selections, onSelect }) => (
+/** The clip every spawn button plays */
+export const ClipRow: React.FC<ClipRowProps> = ({ clip, onSelect }) => (
+  <View style={styles.row}>
+    {CLIPS.map(c => (
+      <Option
+        key={c.id}
+        label={c.label}
+        color={CLIP_COLOR}
+        selected={clip === c.id}
+        disabled={!hasClip(c.id)}
+        onPress={() => onSelect(c.id)}
+      />
+    ))}
+  </View>
+);
+
+interface AssetPanelProps {
+  clip: ClipId;
+  variants: Record<PlayerId, string>;
+  onSelectVariant: (player: PlayerId, variant: string) => void;
+}
+
+/** The variant each spawn button plays, for the players that read more than one, in the player's colour */
+export const AssetPanel: React.FC<AssetPanelProps> = ({ clip, variants, onSelectVariant }) => (
   <View style={styles.panel}>
-    {PLAYERS.map(player => (
-      <PlayerSection
+    {PLAYERS.filter(player => player.variants.length > 1).map(player => (
+      <VariantSection
         key={player.id}
         player={player}
-        selection={selections[player.id]}
-        onSelect={selection => onSelect(player.id, selection)}
+        selected={variantFor(player, clip, variants[player.id])?.id}
+        clip={clip}
+        onSelect={variant => onSelectVariant(player.id, variant)}
       />
     ))}
     <Text style={styles.legend}>
-      {CLIPS.map(clip => `${clip.label} ${clip.detail}`).join(', ')}{'\n'}
-      S: alpha inside the VP9 stream{'\n'}
+      {CLIPS.map(c => `${c.label} ${c.detail}`).join(', ')}{'\n'}
+      S: alpha inside the VP8 or VP9 stream{'\n'}
       D: dual stream, alpha in its own track{'\n'}
       Raw: uncompressed ASTC{'\n'}
       Greyed out: not in assets/media
@@ -37,43 +61,40 @@ export const AssetPanel: React.FC<AssetPanelProps> = ({ selections, onSelect }) 
   </View>
 );
 
-interface PlayerSectionProps {
+const PER_ROW = 3;
+
+interface VariantSectionProps {
   player: Player;
-  selection: Selection;
-  onSelect: (selection: Selection) => void;
+  selected: string | undefined;
+  clip: ClipId;
+  onSelect: (variant: string) => void;
 }
 
-const PlayerSection: React.FC<PlayerSectionProps> = ({ player, selection, onSelect }) => (
-  <View style={[styles.section, { borderColor: player.color }]}>
-    <Text style={[styles.title, { color: player.color }]}>{player.title}</Text>
-    <View style={styles.row}>
-      {CLIPS.map(clip => (
-        <Option
-          key={clip.id}
-          label={clip.label}
-          color={player.color}
-          selected={selection.clip === clip.id}
-          disabled={!hasClip(player, clip.id)}
-          onPress={() => onSelect(selectClip(player, selection, clip.id))}
-        />
+const VariantSection: React.FC<VariantSectionProps> = ({ player, selected, clip, onSelect }) => {
+  const rows = [];
+  for (let i = 0; i < player.variants.length; i += PER_ROW) rows.push(player.variants.slice(i, i + PER_ROW));
+  return (
+    <View style={[styles.section, { borderColor: player.color }]}>
+      <Text style={[styles.title, { color: player.color }]}>{player.title}</Text>
+      {rows.map((row, i) => (
+        <View key={i} style={styles.row}>
+          {row.map(variant => (
+            <Option
+              key={variant.id}
+              label={variant.label}
+              color={player.color}
+              selected={selected === variant.id}
+              disabled={!variant.files[clip]}
+              onPress={() => onSelect(variant.id)}
+            />
+          ))}
+          {/* Keeps a short last row's buttons as wide as the full rows' */}
+          {Array.from({ length: PER_ROW - row.length }, (_, j) => <View key={`gap${j}`} style={styles.gap} />)}
+        </View>
       ))}
     </View>
-    {player.variants.length > 1 && (
-      <View style={styles.row}>
-        {player.variants.map(variant => (
-          <Option
-            key={variant.id}
-            label={variant.label}
-            color={player.color}
-            selected={selection.variant === variant.id}
-            disabled={!fileFor(player, { clip: selection.clip, variant: variant.id })}
-            onPress={() => onSelect({ clip: selection.clip, variant: variant.id })}
-          />
-        ))}
-      </View>
-    )}
-  </View>
-);
+  );
+};
 
 interface OptionProps {
   label: string;
@@ -122,6 +143,9 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 4,
     alignItems: 'center',
+  },
+  gap: {
+    flex: 1,
   },
   optionDisabled: {
     opacity: 0.3,

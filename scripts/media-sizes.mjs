@@ -21,10 +21,11 @@ export const SIZES = {
 export const SIZE_HELP = `\
   s  small   11 MB. Downloads Glow as a VP9 WebM and as zstd ASTC KTX2, and makes nothing, so
              it needs no tools. Plays on the WebM C++, FFmpegKit, ExoPlayer and ASTC Zstd buttons;
-             Manta, APNG, AVIF and the dual-stream and Raw variants are greyed out.
-  m  medium  About 310 MB. Downloads Glow and the 1080p Manta (110 MB), then makes every variant
-             but Raw Manta from them: dual-stream VP9 and AV1, APNG, AVIF and Raw Glow. Takes about
-             3 minutes and needs ffmpeg, avifenc and zstd. Only Raw Manta is greyed out.
+             Manta, APNG, AVIF and the VP8, dual-stream and Raw variants are greyed out.
+  m  medium  About 335 MB. Downloads Glow and the 1080p Manta (110 MB), then makes every variant
+             but Raw Manta from them: dual-stream VP9 and AV1, single- and dual-stream VP8, APNG,
+             AVIF and Raw Glow. Takes about 4 minutes and needs ffmpeg, avifenc and zstd. Only Raw
+             Manta is greyed out.
   l  large   About 1.2 GB. Medium, plus Raw Manta: Manta's KTX2 decompressed (879 MB), for the
              uncompressed ASTC path at 1080p.`;
 
