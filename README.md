@@ -135,7 +135,6 @@ The app is also the test bench for the players on Android and iOS: `testing/` dr
 
 | Command | What it checks | Needs |
 |---|---|---|
-| `npm test` | Jest: the app renders | nothing |
 | `npm run testcards` | Generates the test cards and their fixtures in `testing/build/testcard` | ffmpeg with libvpx and libsvtav1, and [alpha-video-gpu-encoder](https://github.com/MediaCacheDev/alpha-video-gpu-encoder) next to this repo (or `TEXENC=path/to/texenc.js`) |
 | `npm run testcards:reference` | The fixtures through FFmpeg's and KTX-Software's decoders (they must pass, or the cards are wrong), and through models of the players' maths | the cards |
 | `npm run test:pixels -- --platform <p>` | Every player on every card: frame codes after seeks, alpha, colour, position | the cards, and the Release build on a booted emulator or simulator |
@@ -205,7 +204,7 @@ npm run test:streaming -- --platform android --only 'replay'   # by case name
 With an emulator and a simulator booted and the Release builds installed:
 
 ```sh
-npm test && npm run testcards && npm run testcards:reference
+npm run testcards && npm run testcards:reference
 for p in android ios; do
   npm run test:pixels -- --platform $p && npm run test:pixels -- --platform $p --playback && npm run test:streaming -- --platform $p
 done
