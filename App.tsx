@@ -128,8 +128,10 @@ function AppContent() {
   const [showSettings, setShowSettings] = useState(true);
 
   const counts: Partial<Record<PlayerId, number>> = {};
+  let exoPlayerCount = 0;
   for (const inst of instances) {
-    if (inst.player !== 'exovp9alpha') counts[inst.player] = (counts[inst.player] ?? 0) + 1;
+    if (inst.player === 'exovp9alpha') exoPlayerCount++;
+    else counts[inst.player] = (counts[inst.player] ?? 0) + 1;
   }
   const metrics = usePerformanceMetrics();
 
@@ -308,6 +310,7 @@ function AppContent() {
                 source={{ uri: instance.uri }}
                 autoPlay
                 loop
+                onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
               />
             );
             if (instance.player === 'avif') return (
@@ -316,6 +319,7 @@ function AppContent() {
                 source={{ uri: instance.uri }}
                 autoPlay
                 loop
+                onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
               />
             );
             return <View style={sizeStyle} />;
@@ -470,7 +474,11 @@ function AppContent() {
           onSpawnExoVp9Alpha={Platform.OS === 'android' ? spawnExoVp9Alpha : undefined}
           onClearAll={clearAll}
         />
-        <PerformancePanel metrics={metrics} counts={counts} />
+        <PerformancePanel
+          metrics={metrics}
+          counts={counts}
+          exoPlayerCount={Platform.OS === 'android' ? exoPlayerCount : undefined}
+        />
       </View>
     </View>
   );

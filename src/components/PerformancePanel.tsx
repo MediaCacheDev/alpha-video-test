@@ -7,9 +7,11 @@ interface PerformancePanelProps {
   metrics: PerformanceMetrics;
   /** Players on screen, by player */
   counts: Partial<Record<PlayerId, number>>;
+  /** ExoPlayer tiles on screen; its badge shows only when given, as its spawn button does */
+  exoPlayerCount?: number;
 }
 
-export const PerformancePanel: React.FC<PerformancePanelProps> = ({ metrics, counts }) => {
+export const PerformancePanel: React.FC<PerformancePanelProps> = ({ metrics, counts, exoPlayerCount }) => {
   const getFpsColor = (fps: number) => {
     if (fps >= 55) return '#4CAF50';
     if (fps >= 30) return '#FFC107';
@@ -83,9 +85,14 @@ export const PerformancePanel: React.FC<PerformancePanelProps> = ({ metrics, cou
             </Text>
           </View>
         ))}
+        {exoPlayerCount != null && (
+          <View style={[styles.countBadge, { backgroundColor: '#FF9800' }]}>
+            <Text style={styles.countText}>EXOPLAYER: {exoPlayerCount}</Text>
+          </View>
+        )}
         <View style={[styles.countBadge, { backgroundColor: '#607D8B' }]}>
           <Text style={styles.countText}>
-            Total: {Object.values(counts).reduce((a, b) => a + (b ?? 0), 0)}
+            Total: {Object.values(counts).reduce((a, b) => a + (b ?? 0), exoPlayerCount ?? 0)}
           </Text>
         </View>
       </View>
