@@ -1,5 +1,9 @@
 # Alpha Video Test
 
+<p align="center">
+  <img src="docs/alpha-video-test.avif" alt="The demo app on Android: transparent videos in each format playing over a checkerboard, with FPS, CPU and memory readouts" width="360">
+</p>
+
 A React Native app (Android, iOS and web) that plays the same transparent video in every format these packages support, side by side over a checkerboard, with live FPS, CPU and memory readouts. Spawn as many players of each kind as you like and watch what they cost on your own device.
 
 ## The players it compares
