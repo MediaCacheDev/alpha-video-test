@@ -120,7 +120,10 @@ public class ExoVp9AlphaView extends Vp9AlphaTextureView {
         player.setRepeatMode(loop ? Player.REPEAT_MODE_ONE : Player.REPEAT_MODE_OFF);
     }
 
-    /** Also runs when the view leaves the window, and again when React Native drops it. */
+    /**
+     * React Native calls this when it drops the view. Leaving the window doesn't, since a zIndex
+     * change detaches and attaches the view again; the player keeps decoding meanwhile.
+     */
     @Override
     public void release() {
         if (released) return;
