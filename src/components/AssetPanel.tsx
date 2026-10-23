@@ -10,7 +10,8 @@ import {
   type PlayerId,
 } from '../catalog';
 
-const CLIP_COLOR = '#4a9';
+// Grey: the clip applies to every player, so none of their colours
+const CLIP_COLOR = '#757575';
 
 interface ClipRowProps {
   clip: ClipId;
