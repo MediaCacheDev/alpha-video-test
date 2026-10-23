@@ -4,13 +4,30 @@ import { AlphaVideoView, type AlphaVideoViewRef, type Decoder } from 'react-nati
 import { AlphaVideoGpuView, type AlphaVideoGpuViewRef } from 'react-native-alpha-video-gpu';
 import type { StreamTestCase } from '../../testing/streaming/link';
 
-/** One player on a source, reporting load, seek, end and errors to the stream-test driver. */
+/** `count` players on a source (default 1), reporting load, seek, end and errors to the stream-test driver. */
 export function StreamTestScreen({ testCase: c }: { testCase: StreamTestCase }) {
+  const count = Math.max(1, c.count ?? 1);
+  const columns = Math.ceil(Math.sqrt(count));
+  return (
+    <View style={styles.screen}>
+      <StatusBar hidden />
+      <View style={styles.grid}>
+        {Array.from({ length: count }, (_, n) => (
+          <View key={n} style={{ width: `${100 / columns}%` }}>
+            <TestPlayer testCase={c} id={n === 0 ? c.id : `${c.id}-${n}`} showStatus={n === 0} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function TestPlayer({ testCase: c, id, showStatus }: { testCase: StreamTestCase; id: string; showStatus: boolean }) {
   const [status, setStatus] = useState('loading');
   const ref = useRef<AlphaVideoViewRef & AlphaVideoGpuViewRef>(null);
   const report = (event: string, detail = '') => {
     setStatus(detail ? `${event}: ${detail}` : event);
-    const query = `id=${encodeURIComponent(c.id)}&event=${event}&detail=${encodeURIComponent(detail)}`;
+    const query = `id=${encodeURIComponent(id)}&event=${event}&detail=${encodeURIComponent(detail)}`;
     fetch(`${c.report}/event?${query}`).catch(() => {});
   };
   const source = useMemo(
@@ -29,16 +46,18 @@ export function StreamTestScreen({ testCase: c }: { testCase: StreamTestCase }) 
   };
 
   return (
-    <View style={styles.screen}>
-      <StatusBar hidden />
+    <>
       {c.player === 'ktx2' ? (
         <AlphaVideoGpuView
-          key={c.id}
+          key={id}
           ref={ref}
           source={source}
           cacheKey={c.cacheKey}
           storage={c.storage}
           stream={c.mode === 'preload' ? false : undefined}
+          memoryStrategy={c.memoryStrategy}
+          streamingPrefetchAhead={c.prefetch}
+          verbose={c.verbose}
           loop={c.loop ?? true}
           style={styles.player}
           onLoad={(e) => onLoad(`${e.nativeEvent.frameCount} frames`)}
@@ -47,13 +66,15 @@ export function StreamTestScreen({ testCase: c }: { testCase: StreamTestCase }) 
         />
       ) : (
         <AlphaVideoView
-          key={c.id}
+          key={id}
           ref={ref}
           source={source}
           cacheKey={c.cacheKey}
           storage={c.storage}
           mode={c.mode}
           decoder={c.decoder as Decoder | undefined}
+          streamPrefetchAhead={c.prefetch}
+          verbose={c.verbose}
           loop={c.loop ?? true}
           style={styles.player}
           onLoad={(e) => onLoad(e.decoder)}
@@ -61,15 +82,18 @@ export function StreamTestScreen({ testCase: c }: { testCase: StreamTestCase }) 
           onEnd={() => report('end')}
         />
       )}
-      <Text style={styles.status}>
-        {c.id}: {status}
-      </Text>
-    </View>
+      {showStatus && (
+        <Text style={styles.status}>
+          {id}: {status}
+        </Text>
+      )}
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#000' },
-  player: { marginTop: 80, width: '100%', aspectRatio: 16 / 9 },
-  status: { position: 'absolute', left: 8, right: 8, bottom: 24, color: '#808080', fontSize: 12 },
+  grid: { marginTop: 80, flexDirection: 'row', flexWrap: 'wrap' },
+  player: { width: '100%', aspectRatio: 16 / 9 },
+  status: { position: 'absolute', left: 8, right: 8, top: -60, color: '#808080', fontSize: 12 },
 });

@@ -103,8 +103,7 @@ function AppContent() {
   const [webmDecoder, setWebmDecoder] = useState<Decoder>('auto');
   const [webmWebDecoder, setWebmWebDecoder] = useState<WebDecoder>('auto');
   const [useDecodeQueue, setUseDecodeQueue] = useState(true);
-  const [streamCacheSize, setStreamCacheSize] = useState(30);
-  const [streamPrefetchAhead, setStreamPrefetchAhead] = useState(15);
+  const [streamPrefetchAhead, setStreamPrefetchAhead] = useState(8);
 
   // Playback mode for WebM FFmpegKit
   const [webmKitStream, setWebmKitStream] = useState(true);
@@ -115,10 +114,8 @@ function AppContent() {
   // Stream mode for KTX2/ASTC
   const [ktx2StreamEnabled, setKtx2StreamEnabled] = useState(true);
   
-  // Streaming settings for KTX2 ZST (minimal memory defaults)
-  const [ktx2RingSize, setKtx2RingSize] = useState(8);
-  const [ktx2CacheSize, setKtx2CacheSize] = useState(20);
-  const [ktx2PrefetchAhead, setKtx2PrefetchAhead] = useState(15);
+  // Streaming settings for KTX2 ZST
+  const [ktx2PrefetchAhead, setKtx2PrefetchAhead] = useState(8);
   const [ktx2MemoryStrategy, setKtx2MemoryStrategy] = useState<'ram' | 'vram'>('vram');
 
   // What each player's spawn button plays next
@@ -267,8 +264,6 @@ function AppContent() {
                 autoPlay
                 loop
                 stream={ktx2StreamEnabled}
-                streamingRingSize={ktx2RingSize}
-                streamingCacheSize={ktx2CacheSize}
                 streamingPrefetchAhead={ktx2PrefetchAhead}
                 onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
               />
@@ -294,7 +289,6 @@ function AppContent() {
                 decoder={Platform.OS === 'android' ? webmDecoder : undefined}
                 webDecoder={webmWebDecoder}
                 useDecodeQueue={useDecodeQueue}
-                streamCacheSize={streamCacheSize}
                 streamPrefetchAhead={streamPrefetchAhead}
                 onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
               />
@@ -352,51 +346,17 @@ function AppContent() {
             />
           </View>
           <View style={styles.streamingRow}>
-            <Text style={styles.streamingLabel}>Ring: {ktx2RingSize}</Text>
-            <View style={styles.arrowButtons}>
-              <TouchableOpacity
-                style={styles.arrowBtn}
-                onPress={() => setKtx2RingSize(v => Math.max(4, v - 2))}
-              >
-                <Text style={styles.arrowText}>−</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.arrowBtn}
-                onPress={() => setKtx2RingSize(v => Math.min(32, v + 2))}
-              >
-                <Text style={styles.arrowText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View style={styles.streamingRow}>
-            <Text style={styles.streamingLabel}>Cache: {ktx2CacheSize}</Text>
-            <View style={styles.arrowButtons}>
-              <TouchableOpacity
-                style={styles.arrowBtn}
-                onPress={() => setKtx2CacheSize(v => Math.max(10, v - 5))}
-              >
-                <Text style={styles.arrowText}>−</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.arrowBtn}
-                onPress={() => setKtx2CacheSize(v => Math.min(120, v + 5))}
-              >
-                <Text style={styles.arrowText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View style={styles.streamingRow}>
             <Text style={styles.streamingLabel}>Prefetch: {ktx2PrefetchAhead}</Text>
             <View style={styles.arrowButtons}>
               <TouchableOpacity
                 style={styles.arrowBtn}
-                onPress={() => setKtx2PrefetchAhead(v => Math.max(5, v - 5))}
+                onPress={() => setKtx2PrefetchAhead(v => Math.max(1, v - 1))}
               >
                 <Text style={styles.arrowText}>−</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.arrowBtn}
-                onPress={() => setKtx2PrefetchAhead(v => Math.min(60, v + 5))}
+                onPress={() => setKtx2PrefetchAhead(v => Math.min(60, v + 1))}
               >
                 <Text style={styles.arrowText}>+</Text>
               </TouchableOpacity>
@@ -479,23 +439,6 @@ function AppContent() {
                   trackColor={{ false: '#555', true: '#4a9' }}
                   thumbColor={useDecodeQueue ? '#fff' : '#888'}
                 />
-              </View>
-              <View style={styles.streamingRow}>
-                <Text style={styles.streamingLabel}>Cache: {streamCacheSize}</Text>
-                <View style={styles.arrowButtons}>
-                  <TouchableOpacity
-                    style={styles.arrowBtn}
-                    onPress={() => setStreamCacheSize(v => Math.max(1, v - 1))}
-                  >
-                    <Text style={styles.arrowText}>−</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.arrowBtn}
-                    onPress={() => setStreamCacheSize(v => Math.min(200, v + 1))}
-                  >
-                    <Text style={styles.arrowText}>+</Text>
-                  </TouchableOpacity>
-                </View>
               </View>
               <View style={styles.streamingRow}>
                 <Text style={styles.streamingLabel}>Prefetch: {streamPrefetchAhead}</Text>

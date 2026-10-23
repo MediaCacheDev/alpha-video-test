@@ -24,6 +24,13 @@ export interface StreamTestCase {
   seekTo?: number;
   /** Default true; false plays once and reports `end`. */
   loop?: boolean;
+  /** Players on the source, in a grid; default 1. Each reports under `<id>-<n>` from the second on. */
+  count?: number;
+  /** streamPrefetchAhead (WebM) or streamingPrefetchAhead (KTX2) */
+  prefetch?: number;
+  /** KTX2 only */
+  memoryStrategy?: 'vram' | 'ram';
+  verbose?: boolean;
 }
 
 export function streamTestUrl(c: StreamTestCase): string {
