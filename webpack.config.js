@@ -75,6 +75,11 @@ module.exports = {
           from: path.resolve(appDirectory, 'assets'),
           noErrorOnMissing: true,
         },
+        // At the root, so its scope is the whole app
+        {
+          from: path.resolve(appDirectory, 'node_modules/range-source-web/dist/range-source-sw.js'),
+          noErrorOnMissing: true,
+        },
       ],
     }),
   ],

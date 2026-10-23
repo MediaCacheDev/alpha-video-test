@@ -58,6 +58,8 @@ npm run android                  # or: npm run ios
 npm run web                      # webpack dev server; npm run build:web for a production build
 ```
 
+On the web, `index.web.js` registers range-source's Service Worker before rendering, and webpack copies `range-source-sw.js` to the root, so the WebM players' `<video>` streams and stores through it as the canvas engines do. Chrome DevTools' Application tab shows it, and Shift-reload is claimed by it again.
+
 ## Demo media
 
 The clips live in `assets/media/`, which isn't committed. Everything in it is bundled into the APK, the iOS app and the web build. Only four source files are downloaded; the other variants are made from them on your machine.
