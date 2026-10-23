@@ -52,7 +52,7 @@ cd ios && bundle exec pod install && cd ..
 
 `bundle` is Ruby's Bundler. CocoaPods is a Ruby gem, and the `Gemfile` (from the React Native template) pins versions known to work with React Native, so `bundle exec pod install` runs that CocoaPods rather than whichever is installed globally. If your global CocoaPods works, `cd ios && pod install` does the same. Android needs neither.
 
-`package.json` installs the players from tarballs packed in the sibling repos (`../webmvp9alphaplayer/...`, `../ktx2player/...`, `../react-native-apng-avif/...`), so the app runs against their working copies rather than the npm releases. range-source comes from its releases: `react-native-range-source` from npm, `range-source-web` with the web players, and on Android `dev.mediacache:range-source-media3` from Maven Central.
+The players and range-source come from their releases: the npm packages, `range-source-web` with the web players, and on Android `dev.mediacache:range-source-media3` from Maven Central. To try a player's working copy instead, pack it (`npm pack` in its repository) and install the tarball here (`npm install ../path/to/package-1.0.0.tgz`).
 
 The Android build also needs the Media3 fork for the ExoPlayer button: `android/settings.gradle` includes its modules from `../exoplayer_alpha/media` (branch `feature/vp9-alpha-decoder`), and every Media3 class in the app comes from there. Build its FFmpeg and libvpx once first, as [its module's README](https://github.com/MediaCacheDev/exoplayer-vp9-alpha/blob/feature/vp9-alpha-decoder/libraries/decoder_vp9_alpha/README.md) describes (`libraries/decoder_vp9_alpha/src/main/jni/build_ffmpeg.sh`).
 
@@ -156,7 +156,7 @@ cd ios && xcodebuild -workspace AlphaVideoTest.xcworkspace -scheme AlphaVideoTes
 xcrun simctl install booted ios/build/dd/Build/Products/Release-iphonesimulator/AlphaVideoTest.app
 ```
 
-Rebuild after installing new package tarballs: the app compiles the players' native code from `node_modules`.
+Rebuild after updating a player or installing a tarball: the app compiles the players' native code from `node_modules`.
 
 ### Pixel tests
 
