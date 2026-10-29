@@ -17,7 +17,8 @@
     "test:pixels": "tsc -p testing && node testing/pixels/run.ts",
     "test:streaming": "tsc -p testing && node testing/streaming/run.ts",
     "web": "webpack serve --mode development --config webpack.config.js",
-    "build:web": "webpack --mode production --config webpack.config.js"
+    "build:web": "webpack --mode production --config webpack.config.js",
+    "deploy:web": "node scripts/deploy-web.mjs"
   },
   "dependencies": {
     "@react-native/new-app-screen": "0.83.1",

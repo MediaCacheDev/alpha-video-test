@@ -1,7 +1,9 @@
 # Alpha Video Test
 
 <p align="center">
-  <img src="docs/alpha-video-test.avif" alt="The demo app on Android: transparent videos in each format playing over a checkerboard, with FPS, CPU and memory readouts" width="360">
+  <a href="https://www.alpha-video.dev"><img src="docs/alpha-video-test.avif" alt="The demo app on Android: transparent videos in each format playing over a checkerboard, with FPS, CPU and memory readouts" width="360"></a>
+  <br>
+  <a href="https://www.alpha-video.dev">Try the web build at www.alpha-video.dev</a>
 </p>
 
 A React Native app (Android, iOS and web) that plays the same transparent video in every format these packages support, side by side over a checkerboard, with live FPS, CPU and memory readouts. Spawn as many players of each kind as you like and watch what they cost on your own device.
@@ -64,9 +66,21 @@ npm run web                      # webpack dev server; npm run build:web for a p
 
 On the web, `index.web.js` registers range-source's Service Worker before rendering, and webpack copies `range-source-sw.js` to the root, so the WebM players' `<video>` streams and stores through it as the canvas engines do. Chrome DevTools' Application tab shows it, and Shift-reload is claimed by it again.
 
+### Hosting the web demo
+
+The web build runs at [www.alpha-video.dev](https://www.alpha-video.dev), deployed this way. `npm run deploy:web` puts the production build on S3 behind CloudFront. It creates or updates the CloudFormation stack in `web/hosting.yml`, builds, uploads the media whose contents changed and the new bundles, and invalidates CloudFront. Then it prints the site's address. It uses the AWS CLI's session and region, so sign in first (`aws sso login` or `aws configure`). The first run waits about five minutes for CloudFront.
+
+The site needs HTTPS, which the Service Worker requires, and cross-origin isolation, which the players' threaded WebAssembly decoders require. That's why it's a private bucket behind CloudFront, not an S3 website: CloudFront serves over HTTPS, reads the bucket through origin access control, and adds `Cross-Origin-Opener-Policy`, `Cross-Origin-Embedder-Policy` and `Cross-Origin-Resource-Policy` to every response. The media are served from the same origin, at `/media/`.
+
+The production build ships only the media the app's catalog (`src/catalog.ts`) names, so the streaming tests' files stay out. `WEB_MEDIA_SKIP` leaves out more; the deploy defaults it to `manta_uncompressed.ktx2`, the 839 MB Raw Manta, which the hosted app greys out. `STACK` names the stack (default `alpha-video-test-web`).
+
+`WEB_DOMAIN=alpha-video.dev npm run deploy:web` serves the site at that domain and its `www.`, besides the `cloudfront.net` address. The domain's DNS must be a Route 53 hosted zone; a domain from another registrar keeps its registration there, with its name servers set to the zone's. The first such deploy requests a certificate in us-east-1, which is where CloudFront needs it. It adds the certificate's validation records to the zone and waits for ACM to issue it, usually a few minutes. The stack then adds the domain to CloudFront, with alias records pointing to it, which a domain's root needs instead of a CNAME. Later deploys keep the domain without `WEB_DOMAIN`, and `WEB_DOMAIN=` (empty) removes it.
+
+To take the site down, empty the bucket (`aws s3 rm s3://<bucket> --recursive`) and run `aws cloudformation delete-stack --stack-name alpha-video-test-web`.
+
 ## Demo media
 
-The clips live in `assets/media/`, which isn't committed. Everything in it is bundled into the APK, the iOS app and the web build. At most four source files are downloaded; the other variants are made from them on your machine.
+The clips live in `assets/media/`, which isn't committed. Everything in it is bundled into the APK and the iOS app; the web's production build takes only what the app plays (see Hosting the web demo). At most four source files are downloaded; the other variants are made from them on your machine.
 
 `npm run media` asks for one of three sizes, or takes it as an argument (`s`, `m`, `l` or the full name):
 
