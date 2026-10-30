@@ -78,6 +78,20 @@ interface AnimationInstance {
   width?: number;  // Actual file width (set after load)
   height?: number; // Actual file height (set after load)
   decoder?: string; // Engine onLoad reported, e.g. 'mediacodec-hw' (C++ player)
+  /** The settings panels' values when the player was spawned; changing them affects only new players */
+  settings: PlayerSettings;
+}
+
+interface PlayerSettings {
+  ktx2Stream: boolean;
+  ktx2PrefetchAhead: number;
+  ktx2MemoryStrategy: 'ram' | 'vram';
+  webmKitStream: boolean;
+  webmMode: 'preload' | 'stream' | 'streamAndPreload';
+  webmDecoder: Decoder;
+  webmWebDecoder: WebDecoder;
+  useDecodeQueue: boolean;
+  streamPrefetchAhead: number;
 }
 
 let instanceCounter = 0;
@@ -156,6 +170,17 @@ function AppContent() {
     if (!variant || !uri) return;
     const label = `${CLIPS.find(c => c.id === clip)!.label} ${variant.label}`;
     const pos = getRandomPosition();
+    const settings: PlayerSettings = {
+      ktx2Stream: ktx2StreamEnabled,
+      ktx2PrefetchAhead,
+      ktx2MemoryStrategy,
+      webmKitStream,
+      webmMode,
+      webmDecoder,
+      webmWebDecoder,
+      useDecodeQueue,
+      streamPrefetchAhead,
+    };
     setInstances(prev => [...prev, {
       id: `${player}-${++instanceCounter}`,
       player,
@@ -164,8 +189,10 @@ function AppContent() {
       x: pos.x,
       y: pos.y,
       zIndex: prev.length,
+      settings,
     }]);
-  }, [getRandomPosition, clip, variants]);
+  }, [getRandomPosition, clip, variants, ktx2StreamEnabled, ktx2PrefetchAhead, ktx2MemoryStrategy, webmKitStream,
+    webmMode, webmDecoder, webmWebDecoder, useDecodeQueue, streamPrefetchAhead]);
 
   const spawnExoVp9Alpha = useCallback(() => spawn('exovp9alpha'), [spawn]);
 
@@ -257,16 +284,17 @@ function AppContent() {
             const w = useRealSize ? (instance.width || DEFAULT_PLAYER_SIZE) : DEFAULT_PLAYER_SIZE;
             const h = useRealSize ? (instance.height || DEFAULT_PLAYER_SIZE) : DEFAULT_PLAYER_SIZE;
             const sizeStyle = { width: w, height: h };
+            const settings = instance.settings;
 
             if (instance.player === 'astc') return (
               <AlphaVideoGpuView
                 style={sizeStyle}
                 source={{ uri: instance.uri }}
-                memoryStrategy={ktx2MemoryStrategy}
+                memoryStrategy={settings.ktx2MemoryStrategy}
                 autoPlay
                 loop
-                stream={ktx2StreamEnabled}
-                streamingPrefetchAhead={ktx2PrefetchAhead}
+                stream={settings.ktx2Stream}
+                streamingPrefetchAhead={settings.ktx2PrefetchAhead}
                 onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
               />
             );
@@ -274,7 +302,7 @@ function AppContent() {
               <FFmpegKitAlphaView
                 style={sizeStyle}
                 source={{ uri: instance.uri }}
-                mode={webmKitStream ? 'stream' : 'preload'}
+                mode={settings.webmKitStream ? 'stream' : 'preload'}
                 autoPlay
                 loop
                 onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
@@ -287,11 +315,11 @@ function AppContent() {
                 autoPlay
                 loop
                 verbose={false}
-                mode={webmMode}
-                decoder={Platform.OS === 'android' ? webmDecoder : undefined}
-                webDecoder={webmWebDecoder}
-                useDecodeQueue={useDecodeQueue}
-                streamPrefetchAhead={streamPrefetchAhead}
+                mode={settings.webmMode}
+                decoder={Platform.OS === 'android' ? settings.webmDecoder : undefined}
+                webDecoder={settings.webmWebDecoder}
+                useDecodeQueue={settings.useDecodeQueue}
+                streamPrefetchAhead={settings.streamPrefetchAhead}
                 onLoad={(e: any) => handleInstanceLoad(instance.id, e)}
               />
             );
