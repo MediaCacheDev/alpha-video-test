@@ -14,13 +14,13 @@ Each button at the bottom is one player:
 
 | Button | Package | What it plays |
 |---|---|---|
-| **+ ASTC** | [alpha-video-gpu](https://github.com/MediaCacheDev/alpha-video-gpu) | KTX2 ASTC texture arrays, drawn without decoding: zstd-compressed (**Zstd**) or uncompressed (**Raw**) |
+| **+ ASTC** | [alpha-video-gpu](https://www.npmjs.com/package/react-native-alpha-video-gpu) ([GitHub](https://github.com/MediaCacheDev/alpha-video-gpu)) | KTX2 ASTC texture arrays, drawn without decoding: zstd-compressed (**Zstd**) or uncompressed (**Raw**) |
 | **+ WebM** (FFmpegKit) | [alpha-video-ffmpegkit](https://github.com/MediaCacheDev/alpha-video-ffmpegkit) | VP9 alpha WebM, single stream only. The first attempt, kept as a reference |
-| **+ WebM** (C++) | [alpha-video](https://github.com/MediaCacheDev/alpha-video) | VP8 or VP9 alpha WebM, and dual-stream VP8/VP9/AV1. Its C++ core decodes with libvpx and dav1d; on Android, MediaCodec decodes in hardware where it can |
-| **+ APNG**, **+ AVIF** | [react-native-apng-avif](https://github.com/MediaCacheDev/react-native-apng-avif) | Animated PNG and animated AVIF (one package, two buttons) |
+| **+ WebM** (C++) | [alpha-video](https://www.npmjs.com/package/react-native-alpha-video) ([GitHub](https://github.com/MediaCacheDev/alpha-video)) | VP8 or VP9 alpha WebM, and dual-stream VP8/VP9/AV1. Its C++ core decodes with libvpx and dav1d; on Android, MediaCodec decodes in hardware where it can |
+| **+ APNG**, **+ AVIF** | [react-native-apng-avif](https://www.npmjs.com/package/react-native-apng-avif) ([GitHub](https://github.com/MediaCacheDev/react-native-apng-avif)) | Animated PNG and animated AVIF (one package, two buttons) |
 | **+ ExoPlayer** (Android) | [exoplayer_alpha](https://github.com/MediaCacheDev/exoplayer-vp9-alpha/tree/feature/vp9-alpha-decoder), a Media3 fork, built from source (see [Setup](#setup)); this app's view is `android/app/src/main/java/dev/mediacache/alphavideotest/exoplayer/` | VP9 alpha WebM, single stream only, in ExoPlayer: its data sources and the fork's `MatroskaExtractor`, which keeps the alpha upstream drops, then FFmpeg's libvpx-vp9. A minimal demo, not published |
 
-The KTX2 files are made with [alpha-video-gpu-encoder](https://github.com/MediaCacheDev/alpha-video-gpu-encoder). [alpha-video](https://github.com/MediaCacheDev/alpha-video#alpha-video-or-alpha-video-gpu) explains when to pick a codec and when ASTC.
+The KTX2 files are made with [alpha-video-gpu-encoder](https://www.npmjs.com/package/alpha-video-gpu-encoder) ([GitHub](https://github.com/MediaCacheDev/alpha-video-gpu-encoder)). [alpha-video](https://github.com/MediaCacheDev/alpha-video#alpha-video-or-alpha-video-gpu) explains when to pick a codec and when ASTC.
 
 The panel on the left picks what the buttons spawn next:
 
